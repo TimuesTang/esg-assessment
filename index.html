@@ -771,6 +771,11 @@ function getRating(score) {
   if (score >= 90) return 'A+'; if (score >= 80) return 'A';
   if (score >= 70) return 'B'; if (score >= 60) return 'C'; return 'D';
 }
+function calcSecScore(code) {
+  var items = INDICATORS.filter(function(i){ return parentCode(i.code) === code; });
+  var total = items.reduce(function(s,i){ return s + (scores[i.code]||0); }, 0);
+  return Math.round(total / items.length);
+}
 
 function showResults() {
   goToPage('results');
@@ -834,25 +839,34 @@ async function submitResults() {
   st.style.color = '#C27803';
   st.style.border = '1px solid rgba(245,158,11,0.4)';
 
-  var data = window._resultData || {e:0,s:0,g:0,total:0,rating:'B'};
-  var row = {
-    company_name: formData.company || '',
-    supplier_id: formData.supplier || '',
-    category: formData.category || '',
-    year: formData.year || '',
-    total_score: data.total,
-    rating: data.rating,
-    e_score: data.e,
-    s_score: data.s,
-    g_score: data.g
-  };
-  /* Only include aggregated 二级指标 scores (18 columns matching DB table) */
-  ['E1','E2','E3','E4','E5','E6','S1','S2','S3','S4','S5','S6','S7','G1','G2','G3','G4','G5'].forEach(function(sc){
-    row[sc.toLowerCase()+'_score'] = calcSecScore(sc);
-  });
+  var data, row;
+  try {
+    data = window._resultData || {e:0,s:0,g:0,total:0,rating:'B'};
+    row = {
+      company_name: formData.company || '',
+      supplier_id: formData.supplier || '',
+      category: formData.category || '',
+      year: formData.year || '',
+      total_score: data.total,
+      rating: data.rating,
+      e_score: data.e,
+      s_score: data.s,
+      g_score: data.g
+    };
+    ['E1','E2','E3','E4','E5','E6','S1','S2','S3','S4','S5','S6','S7','G1','G2','G3','G4','G5'].forEach(function(sc){
+      row[sc.toLowerCase()+'_score'] = calcSecScore(sc);
+    });
+  } catch(e) {
+    st.textContent = '数据准备失败：' + e.message;
+    st.style.background = 'rgba(239,68,68,0.1)';
+    st.style.color = '#991B1B';
+    st.style.border = '1px solid rgba(239,68,68,0.4)';
+    return;
+  }
+
   try {
     var ctrl = new AbortController();
-    var timer = setTimeout(function(){ ctrl.abort(); }, 5000);
+    var timer = setTimeout(function(){ ctrl.abort(); }, 8000);
     var resp = await fetch(SUPABASE_URL + '/rest/v1/esg_assessments', {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
@@ -867,13 +881,14 @@ async function submitResults() {
       st.style.border = '1px solid rgba(18,184,122,0.4)';
     } else {
       var errText = await resp.text();
-      st.textContent = '数据同步失败 (' + resp.status + ')';
+      st.textContent = '同步失败 ' + resp.status + '（' + (errText.substring(0,40)) + '）';
       st.style.background = 'rgba(239,68,68,0.1)';
       st.style.color = '#991B1B';
       st.style.border = '1px solid rgba(239,68,68,0.4)';
     }
   } catch(err) {
-    st.textContent = err.name === 'AbortError' ? '连接超时，Supabase 不可达' : '网络异常，数据未同步';
+    var msg = err.name === 'AbortError' ? '连接超时' : err.message;
+    st.textContent = '同步失败：' + msg;
     st.style.background = 'rgba(239,68,68,0.1)';
     st.style.color = '#991B1B';
     st.style.border = '1px solid rgba(239,68,68,0.4)';
