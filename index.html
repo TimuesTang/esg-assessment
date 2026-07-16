@@ -63,6 +63,7 @@ body { display: flex; align-items: center; justify-content: center; }
   border-bottom: 1px solid rgba(255,255,255,0.7);
 }
 .nav-logo { font-size: 16px; font-weight: 600; color: var(--text); }
+.nav-logo-img { height: 32px; width: auto; }
 .nav-center { font-size: 14px; font-weight: 600; color: var(--text); }
 .nav-exit { font-size: 14px; color: var(--text-secondary); cursor: pointer; background: none; border: none; font-family: var(--font); }
 
@@ -340,7 +341,7 @@ body { display: flex; align-items: center; justify-content: center; }
 
   <!-- Navbar -->
   <nav class="navbar">
-    <span class="nav-logo">纺织服装ESG评估</span>
+    <div style="display:flex;align-items:center;gap:10px;"><img src="assets/6_2.png" class="nav-logo-img"><span class="nav-logo">纺织服装ESG评估</span></div>
     <span class="nav-center" id="navCenter"></span>
     <button class="nav-exit" onclick="location.reload()">退出</button>
   </nav>
@@ -491,16 +492,24 @@ body { display: flex; align-items: center; justify-content: center; }
 </div>
 
 <script>
-/* ===== Supabase Config ===== */
-const SUPABASE_URL = 'https://quimaqprefgwonfefoqg.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_TzxOtERU0SgVjW8yGigo7w_bc165kKE';
-let supabase = null;
-
-try {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-} catch(e) {
-  console.warn('Supabase not configured. Running in demo mode.');
+function goToPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  var pg = document.getElementById('page-' + name);
+  if (pg) pg.classList.add('active');
+  var nc = document.getElementById('navCenter');
+  if (nc) nc.textContent = {intro:'',form:'企业信息',scoring:'板块评分',results:'评估结果',success:'提交成功'}[name] || '';
 }
+
+/* ===== Supabase Config ===== */
+(function initSupabase() {
+  var url = 'https://quimaqprefgwonfefoqg.supabase.co';
+  var key = 'sb_publishable_TzxOtERU0SgVjW8yGigo7w_bc165kKE';
+  try {
+    if (window.supabase && window.supabase.createClient) {
+      window._supabase = window.supabase.createClient(url, key);
+    }
+  } catch(e) { console.warn('Supabase init skipped:', e.message); }
+})();
 
 /* ===== State ===== */
 let currentIndicator = 0;
@@ -682,10 +691,11 @@ function showResults() {
 
 /* ===== Submit to Supabase ===== */
 async function submitResults() {
-  if (!supabase) { toast('数据库未配置，演示模式', 'error'); goToPage('success'); return; }
+  var sb = window._supabase;
+  if (!sb) { goToPage('success'); return; }
   const { e, s, g, total, rating } = window._resultData;
   try {
-    const { error } = await supabase.from('esg_assessments').insert({
+    const { error } = await sb.from('esg_assessments').insert({
       company_name: formData.company,
       supplier_id: formData.supplier,
       category: formData.category,
