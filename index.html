@@ -514,8 +514,10 @@ body { display: flex; align-items: center; justify-content: center; }
         <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="5 13 10 18 19 7"/></svg>
       </div>
       <div class="success-title">提交成功</div>
-      <div class="success-sub">评估数据已成功提交至数据库。<br/>感谢您的参与！</div>
-      <button class="btn-glass" onclick="location.reload()" style="margin-top:8px;">开始新的评估</button>
+      <div class="success-sub" id="successMsg">评估数据已成功提交至数据库。<br/>感谢您的参与！</div>
+      <span id="submitStatus" style="display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:100px;font-size:13px;font-weight:600;"></span>
+      <button class="btn-gradient" onclick="downloadReport()" style="width:100%;">下载评估报告</button>
+      <button class="btn-glass" onclick="location.reload()" style="margin-top:4px;">开始新的评估</button>
     </div>
   </div>
 
@@ -828,40 +830,92 @@ function showResults() {
 /* ===== Submit to Supabase ===== */
 async function submitResults() {
   goToPage('success');
+  var st = document.getElementById('submitStatus');
+  st.style.display = 'inline-flex';
+  st.textContent = '正在提交...';
+  st.style.background = 'rgba(245,158,11,0.15)';
+  st.style.color = '#C27803';
+  st.style.border = '1px solid rgba(245,158,11,0.4)';
+
+  var data = window._resultData || {e:0,s:0,g:0,total:0,rating:'B'};
+  var row = {
+    company_name: formData.company || '',
+    supplier_id: formData.supplier || '',
+    category: formData.category || '',
+    year: formData.year || '',
+    total_score: data.total,
+    rating: data.rating,
+    e_score: data.e,
+    s_score: data.s,
+    g_score: data.g
+  };
+  /* Only include aggregated 二级指标 scores (18 columns matching DB table) */
+  ['E1','E2','E3','E4','E5','E6','S1','S2','S3','S4','S5','S6','S7','G1','G2','G3','G4','G5'].forEach(function(sc){
+    row[sc.toLowerCase()+'_score'] = calcSecScore(sc);
+  });
   try {
-    var data = window._resultData || {e:0,s:0,g:0,total:0,rating:'B'};
-    var row = {
-      company_name: formData.company || '',
-      supplier_id: formData.supplier || '',
-      category: formData.category || '',
-      year: formData.year || '',
-      total_score: data.total,
-      rating: data.rating,
-      e_score: data.e,
-      s_score: data.s,
-      g_score: data.g
-    };
-    ['E1','E2','E3','E4','E5','E6','S1','S2','S3','S4','S5','S6','S7','G1','G2','G3','G4','G5'].forEach(function(sc){
-      row[sc.toLowerCase()+'_score'] = calcSecScore(sc);
-    });
-    INDICATORS.forEach(function(i) { row[i.code.replace('.','_').toLowerCase()+'_score'] = scores[i.code] || 0; });
     var resp = await fetch(SUPABASE_URL + '/rest/v1/esg_assessments', {
       method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
       body: JSON.stringify(row)
     });
-    if (!resp.ok) {
-      var errText = await resp.text();
-      console.warn('Supabase HTTP ' + resp.status + ':', errText);
+    if (resp.ok) {
+      st.textContent = '✓ 数据已同步至 Supabase';
+      st.style.background = 'rgba(18,184,122,0.12)';
+      st.style.color = '#065F46';
+      st.style.border = '1px solid rgba(18,184,122,0.4)';
+    } else {
+      st.textContent = '数据同步失败 (HTTP ' + resp.status + ')，请检查数据库表结构';
+      st.style.background = 'rgba(239,68,68,0.1)';
+      st.style.color = '#991B1B';
+      st.style.border = '1px solid rgba(239,68,68,0.4)';
     }
   } catch(err) {
-    console.warn('提交异常：', err);
+    st.textContent = '网络异常，数据未同步';
+    st.style.background = 'rgba(239,68,68,0.1)';
+    st.style.color = '#991B1B';
+    st.style.border = '1px solid rgba(239,68,68,0.4)';
   }
+}
+
+/* ===== Download Report ===== */
+function downloadReport() {
+  var data = window._resultData || {e:0,s:0,g:0,total:0,rating:'B'};
+  var lines = [
+    '纺织服装企业ESG能力评估报告',
+    '================================',
+    '',
+    '供应商全称：' + (formData.company || '-'),
+    '供应商编号：' + (formData.supplier || '-'),
+    '合作大类：' + (formData.category || '-'),
+    '评估年度：' + (formData.year || '-'),
+    '',
+    '综合得分：' + data.total + ' 分',
+    '综合评级：' + data.rating + ' 级',
+    '',
+    'E 环境：' + data.e + ' 分',
+    'S 社会：' + data.s + ' 分',
+    'G 治理：' + data.g + ' 分',
+    '',
+    '---- 二级指标明细 ----',
+  ];
+  var secOrder = ['E1','E2','E3','E4','E5','E6','S1','S2','S3','S4','S5','S6','S7','G1','G2','G3','G4','G5'];
+  secOrder.forEach(function(sc){
+    lines.push(sc + ' ' + SEC_NAMES[sc] + '：' + calcSecScore(sc) + ' 分');
+  });
+  lines.push('');
+  lines.push('---- 三级指标明细 ----');
+  INDICATORS.forEach(function(i){
+    lines.push(i.code + ' ' + i.name + '：' + (scores[i.code]===100?'是':scores[i.code]===0?'否':'未填'));
+  });
+  lines.push('');
+  lines.push('报告生成时间：' + new Date().toLocaleString());
+
+  var blob = new Blob(['\uFEFF' + lines.join('\n')], {type:'text/plain;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ESG评估报告_' + (formData.company || 'unknown') + '_' + (formData.year || '') + '.txt';
+  a.click();
 }
 
 /* ===== Responsive Scaling ===== */
