@@ -850,24 +850,29 @@ async function submitResults() {
     row[sc.toLowerCase()+'_score'] = calcSecScore(sc);
   });
   try {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function(){ ctrl.abort(); }, 5000);
     var resp = await fetch(SUPABASE_URL + '/rest/v1/esg_assessments', {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify(row)
+      body: JSON.stringify(row),
+      signal: ctrl.signal
     });
+    clearTimeout(timer);
     if (resp.ok) {
-      st.textContent = '✓ 数据已同步至 Supabase';
+      st.innerHTML = '&#10003; 数据已同步至 Supabase';
       st.style.background = 'rgba(18,184,122,0.12)';
       st.style.color = '#065F46';
       st.style.border = '1px solid rgba(18,184,122,0.4)';
     } else {
-      st.textContent = '数据同步失败 (HTTP ' + resp.status + ')，请检查数据库表结构';
+      var errText = await resp.text();
+      st.textContent = '数据同步失败 (' + resp.status + ')';
       st.style.background = 'rgba(239,68,68,0.1)';
       st.style.color = '#991B1B';
       st.style.border = '1px solid rgba(239,68,68,0.4)';
     }
   } catch(err) {
-    st.textContent = '网络异常，数据未同步';
+    st.textContent = err.name === 'AbortError' ? '连接超时，Supabase 不可达' : '网络异常，数据未同步';
     st.style.background = 'rgba(239,68,68,0.1)';
     st.style.color = '#991B1B';
     st.style.border = '1px solid rgba(239,68,68,0.4)';
@@ -876,42 +881,49 @@ async function submitResults() {
 
 /* ===== Download Report ===== */
 function downloadReport() {
-  var data = window._resultData || {e:0,s:0,g:0,total:0,rating:'B'};
-  var lines = [
-    '纺织服装企业ESG能力评估报告',
-    '================================',
-    '',
-    '供应商全称：' + (formData.company || '-'),
-    '供应商编号：' + (formData.supplier || '-'),
-    '合作大类：' + (formData.category || '-'),
-    '评估年度：' + (formData.year || '-'),
-    '',
-    '综合得分：' + data.total + ' 分',
-    '综合评级：' + data.rating + ' 级',
-    '',
-    'E 环境：' + data.e + ' 分',
-    'S 社会：' + data.s + ' 分',
-    'G 治理：' + data.g + ' 分',
-    '',
-    '---- 二级指标明细 ----',
-  ];
-  var secOrder = ['E1','E2','E3','E4','E5','E6','S1','S2','S3','S4','S5','S6','S7','G1','G2','G3','G4','G5'];
-  secOrder.forEach(function(sc){
-    lines.push(sc + ' ' + SEC_NAMES[sc] + '：' + calcSecScore(sc) + ' 分');
-  });
-  lines.push('');
-  lines.push('---- 三级指标明细 ----');
-  INDICATORS.forEach(function(i){
-    lines.push(i.code + ' ' + i.name + '：' + (scores[i.code]===100?'是':scores[i.code]===0?'否':'未填'));
-  });
-  lines.push('');
-  lines.push('报告生成时间：' + new Date().toLocaleString());
-
-  var blob = new Blob(['\uFEFF' + lines.join('\n')], {type:'text/plain;charset=utf-8'});
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'ESG评估报告_' + (formData.company || 'unknown') + '_' + (formData.year || '') + '.txt';
-  a.click();
+  try {
+    var data = window._resultData || {e:0,s:0,g:0,total:0,rating:'B'};
+    var lines = [
+      '纺织服装企业ESG能力评估报告',
+      '================================',
+      '',
+      '供应商全称：' + (formData.company || '-'),
+      '供应商编号：' + (formData.supplier || '-'),
+      '合作大类：' + (formData.category || '-'),
+      '评估年度：' + (formData.year || '-'),
+      '',
+      '综合得分：' + data.total + ' 分',
+      '综合评级：' + data.rating + ' 级',
+      '',
+      'E 环境：' + data.e + ' 分',
+      'S 社会：' + data.s + ' 分',
+      'G 治理：' + data.g + ' 分',
+      '',
+      '---- 二级指标明细 ----',
+    ];
+    var secOrder = ['E1','E2','E3','E4','E5','E6','S1','S2','S3','S4','S5','S6','S7','G1','G2','G3','G4','G5'];
+    secOrder.forEach(function(sc){
+      lines.push(sc + ' ' + SEC_NAMES[sc] + '：' + calcSecScore(sc) + ' 分');
+    });
+    lines.push('');
+    lines.push('---- 三级指标明细 ----');
+    INDICATORS.forEach(function(i){
+      lines.push(i.code + ' ' + i.name + '：' + (scores[i.code]===100?'是':scores[i.code]===0?'否':'未填'));
+    });
+    lines.push('');
+    lines.push('报告生成时间：' + new Date().toLocaleString());
+    var blob = new Blob(['\uFEFF' + lines.join('\n')], {type:'text/plain;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'ESG评估报告_' + (formData.company||'unknown') + '_' + (formData.year||'') + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  } catch(e) {
+    alert('下载失败：' + e.message);
+  }
 }
 
 /* ===== Responsive Scaling ===== */
