@@ -199,12 +199,12 @@ body { display: flex; align-items: center; justify-content: center; }
   border-top: 1px solid rgba(237,241,245,0.5);
 }
 .sub-item:first-child { border-top: none; }
-.sub-q { flex: 1; font-size: 13px; color: var(--text); line-height: 1.5; }
-.sub-q code { font-size: 11px; color: var(--mint); font-weight: 600; margin-right: 6px; }
+.sub-q { flex: 1; font-size: 15px; color: var(--text); line-height: 1.6; }
+.sub-q code { font-size: 12px; color: var(--mint); font-weight: 600; margin-right: 8px; }
 .sub-opts { display: flex; gap: 8px; flex-shrink: 0; }
 .sub-opt {
-  padding: 6px 18px; border-radius: 8px; cursor: pointer;
-  font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  padding: 8px 22px; border-radius: 8px; cursor: pointer;
+  font-size: 14px; font-weight: 500; color: var(--text-secondary);
   border: 1.5px solid rgba(18,184,122,0.35); white-space: nowrap;
   transition: all 0.15s;
 }
@@ -376,7 +376,7 @@ body { display: flex; align-items: center; justify-content: center; }
   <!-- Navbar -->
   <nav class="navbar">
     <div style="display:flex;align-items:center;gap:10px;"><img src="assets/logo.png" style="display:block;height:32px;width:auto;max-width:200px;" alt="logo"><span class="nav-logo">纺织服装ESG评估</span></div>
-    <span class="nav-center" id="navCenter"></span>
+    <span style="flex:1"></span>
     <button class="nav-exit" onclick="location.reload()">退出</button>
   </nav>
 
@@ -827,24 +827,24 @@ function showResults() {
 
 /* ===== Submit to Supabase ===== */
 async function submitResults() {
-  var data = window._resultData;
-  var row = {
-    company_name: formData.company,
-    supplier_id: formData.supplier,
-    category: formData.category,
-    year: formData.year,
-    total_score: data.total,
-    rating: data.rating,
-    e_score: data.e,
-    s_score: data.s,
-    g_score: data.g
-  };
-  /* Store per-二级指标 aggregated scores + all raw scores with _ separator */
-  ['E1','E2','E3','E4','E5','E6','S1','S2','S3','S4','S5','S6','S7','G1','G2','G3','G4','G5'].forEach(function(sc){
-    row[sc.toLowerCase()+'_score'] = calcSecScore(sc);
-  });
-  INDICATORS.forEach(function(i) { row[i.code.replace('.','_').toLowerCase()+'_score'] = scores[i.code] || 0; });
+  goToPage('success');
   try {
+    var data = window._resultData || {e:0,s:0,g:0,total:0,rating:'B'};
+    var row = {
+      company_name: formData.company || '',
+      supplier_id: formData.supplier || '',
+      category: formData.category || '',
+      year: formData.year || '',
+      total_score: data.total,
+      rating: data.rating,
+      e_score: data.e,
+      s_score: data.s,
+      g_score: data.g
+    };
+    ['E1','E2','E3','E4','E5','E6','S1','S2','S3','S4','S5','S6','S7','G1','G2','G3','G4','G5'].forEach(function(sc){
+      row[sc.toLowerCase()+'_score'] = calcSecScore(sc);
+    });
+    INDICATORS.forEach(function(i) { row[i.code.replace('.','_').toLowerCase()+'_score'] = scores[i.code] || 0; });
     var resp = await fetch(SUPABASE_URL + '/rest/v1/esg_assessments', {
       method: 'POST',
       headers: {
@@ -855,11 +855,12 @@ async function submitResults() {
       },
       body: JSON.stringify(row)
     });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    goToPage('success');
+    if (!resp.ok) {
+      var errText = await resp.text();
+      console.warn('Supabase HTTP ' + resp.status + ':', errText);
+    }
   } catch(err) {
-    console.warn('提交失败，进入演示模式：', err);
-    goToPage('success');
+    console.warn('提交异常：', err);
   }
 }
 
