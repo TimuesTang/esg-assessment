@@ -524,38 +524,142 @@ let scores = {};
 let formData = {};
 
 const INDICATORS = [
-  /* E 环境 6项 */
-  { dim:'E', code:'E1', name:'环境管理体系', type:'binary', desc:'企业已建立覆盖环境维度的温室气体排放核算体系，并定期披露范围一、二排放数据。' },
-  { dim:'E', code:'E2', name:'温室气体排放', type:'binary', desc:'企业制定并实施了明确的碳减排目标与路径规划，定期跟踪减排进展。' },
-  { dim:'E', code:'E3', name:'能源管理', type:'binary', desc:'企业建立了能源管理体系，并进行能耗监测与优化。' },
-  { dim:'E', code:'E4', name:'水资源管理', type:'binary', desc:'企业建立水足迹核算体系，定期监测用水效率并制定节水目标。' },
-  { dim:'E', code:'E5', name:'循环经济', type:'binary', desc:'企业在生产过程中采用循环经济原则，推动废弃物减量与资源化利用。' },
-  { dim:'E', code:'E6', name:'污染与化学品管理', type:'binary', desc:'企业建立有害化学品管理清单，确保废水、废气排放符合国家标准。' },
-  /* S 社会 7项 */
-  { dim:'S', code:'S1', name:'劳工权益', type:'binary', desc:'企业保障员工合法权益，签订劳动合同比例≥98%，无使用童工与强迫劳动现象。' },
-  { dim:'S', code:'S2', name:'员工发展与培训', type:'multi', desc:'企业建立系统化的员工培训与职业发展体系，年度培训覆盖率及晋升机制完善程度。', opts:['无体系','初步建立','体系完善'] },
-  { dim:'S', code:'S3', name:'职业健康安全', type:'binary', desc:'企业通过ISO 45001认证，配备完善的职业健康安全管理体系。' },
-  { dim:'S', code:'S4', name:'供应链劳工', type:'binary', desc:'企业建立供应商社会责任审核机制，覆盖全部一级供应商。' },
-  { dim:'S', code:'S5', name:'社区关系', type:'binary', desc:'企业每年投入不低于利润1%的资源用于社区公益与乡村振兴项目。' },
-  { dim:'S', code:'S6', name:'产品责任', type:'binary', desc:'企业建立产品追溯与召回制度，通过OEKO-TEX等安全认证。' },
-  { dim:'S', code:'S7', name:'数据与隐私', type:'binary', desc:'企业建立数据分类分级保护制度，过去三年未发生重大数据泄露事件。' },
-  /* G 治理 4项 */
-  { dim:'G', code:'G1', name:'公司治理', type:'binary', desc:'企业董事会下设ESG专业委员会，每年召开≥2次ESG专题会议。' },
-  { dim:'G', code:'G2', name:'商业道德', type:'binary', desc:'企业制定并公开反腐败政策，建立举报人保护机制。' },
-  { dim:'G', code:'G3', name:'合规与风控', type:'binary', desc:'企业建立全面的合规管理体系，定期进行风险评估与内部审计。' },
-  { dim:'G', code:'G4', name:'ESG 治理', type:'binary', desc:'企业设立专职ESG管理岗位，ESG绩效纳入高管绩效考核权重≥10%。' },
-  { dim:'G', code:'G5', name:'信息披露', type:'multi', desc:'企业年度ESG报告披露完整度及第三方审验情况。', opts:['未披露','部分披露','完整披露且经审验'] },
+  /* ===== E 环境 ===== */
+  /* E1 环境管理体系 */
+  { dim:'E', code:'E1.1', name:'是否建立ISO 14001环境管理体系并持续有效运行？', type:'binary', desc:'环境管理体系（EMS）的建立与认证情况' },
+  { dim:'E', code:'E1.2', name:'是否设置专职环境管理部门或岗位，并明确职责？', type:'binary', desc:'环境管理组织架构的健全性' },
+  { dim:'E', code:'E1.3', name:'是否定期（至少每年一次）开展环境管理内部审核？', type:'binary', desc:'环境管理内审机制的执行情况' },
+  { dim:'E', code:'E1.4', name:'是否制定并公开环境方针和目标，且纳入绩效考核？', type:'binary', desc:'环境方针与目标的制定与公开程度' },
+  { dim:'E', code:'E1.5', name:'是否建立环境应急管理预案并定期演练？', type:'binary', desc:'环境突发事件的应急准备能力' },
+  { dim:'E', code:'E1.6', name:'是否对全体员工开展环境管理相关培训，培训覆盖率≥80%？', type:'binary', desc:'环境管理全员意识提升的落实情况' },
+  /* E2 温室气体排放 */
+  { dim:'E', code:'E2.1', name:'是否建立覆盖范围一、范围二的温室气体排放核算体系？', type:'binary', desc:'碳排放盘查范围的完整性' },
+  { dim:'E', code:'E2.2', name:'是否已完成最近一个完整年度的碳盘查并形成报告？', type:'binary', desc:'碳排放数据更新的及时性' },
+  { dim:'E', code:'E2.3', name:'是否开展范围三（供应链）温室气体排放识别与核算？', type:'binary', desc:'供应链碳足迹管理的深度' },
+  { dim:'E', code:'E2.4', name:'是否制定碳中和路线图并设定明确的近期（2028年前）减排目标？', type:'binary', desc:'减排目标的科学性与前瞻性' },
+  { dim:'E', code:'E2.5', name:'是否已采取实质减排措施（如工艺改进、能源替代）实现减排？', type:'binary', desc:'减排行动的落地效果' },
+  { dim:'E', code:'E2.6', name:'过去三年碳排放总量是否呈下降趋势？', type:'binary', desc:'长期减排趋势的判断' },
+  /* E3 能源管理 */
+  { dim:'E', code:'E3.1', name:'是否建立能源管理体系（如ISO 50001），并进行定期审核？', type:'binary', desc:'能源管理的制度化水平' },
+  { dim:'E', code:'E3.2', name:'是否建立能源消耗实时监测系统，覆盖主要用能环节？', type:'binary', desc:'能源数据在线监测能力' },
+  { dim:'E', code:'E3.3', name:'是否对主要耗能设备进行能效评估并制定淘汰/升级计划？', type:'binary', desc:'高耗能设备的精细化管理' },
+  { dim:'E', code:'E3.4', name:'可再生能源使用比例是否≥10%？', type:'binary', desc:'清洁能源替代程度' },
+  { dim:'E', code:'E3.5', name:'近三年单位产值综合能耗是否持续下降？', type:'binary', desc:'能效持续改善的趋势判断' },
+  { dim:'E', code:'E3.6', name:'是否在新建/改建项目中优先采用节能设计和设备？', type:'binary', desc:'节能理念在前端设计的融入' },
+  /* E4 水资源管理 */
+  { dim:'E', code:'E4.1', name:'是否建立全厂水平衡测试体系并掌握各工序用水量？', type:'binary', desc:'水资源基础数据的完整性' },
+  { dim:'E', code:'E4.2', name:'是否设定年度节水目标并定期跟踪完成情况？', type:'binary', desc:'节水目标管理的规范性' },
+  { dim:'E', code:'E4.3', name:'是否采用先进节水工艺/设备（如逆流漂洗、中水回用）？', type:'binary', desc:'节水技术的应用水平' },
+  { dim:'E', code:'E4.4', name:'废水回用率是否≥30%？', type:'binary', desc:'水资源循环利用效率' },
+  { dim:'E', code:'E4.5', name:'厂界废水排放是否稳定达到国家和地方排放标准？', type:'binary', desc:'废水达标排放的可靠性' },
+  { dim:'E', code:'E4.6', name:'是否在缺水地区运营时执行水风险评估与减缓措施？', type:'binary', desc:'水风险的区域针对性管理' },
+  /* E5 循环经济 */
+  { dim:'E', code:'E5.1', name:'是否将循环经济原则纳入产品设计和工艺开发的前端？', type:'binary', desc:'循环理念在设计端的融入' },
+  { dim:'E', code:'E5.2', name:'是否对一般工业固体废物进行分类收集、暂存和台账管理？', type:'binary', desc:'固废管理的基础规范性' },
+  { dim:'E', code:'E5.3', name:'一般固废综合利用率是否≥80%？', type:'binary', desc:'固废资源化利用的效率' },
+  { dim:'E', code:'E5.4', name:'是否推行"边角料零废弃"或"废料升级再造"项目？', type:'binary', desc:'纺织行业特有的循环实践' },
+  { dim:'E', code:'E5.5', name:'是否使用再生纤维/再生材料作为原料，且比例≥10%？', type:'binary', desc:'再生原料的使用比例' },
+  { dim:'E', code:'E5.6', name:'是否建立包装减量或包装循环复用机制？', type:'binary', desc:'包装环节的循环管理' },
+  /* E6 污染与化学品管理 */
+  { dim:'E', code:'E6.1', name:'是否建立有害化学品管理清单并动态更新？', type:'binary', desc:'化学品基础台账的完整性' },
+  { dim:'E', code:'E6.2', name:'是否执行ZDHC（零排放危险化学品）或等效标准？', type:'binary', desc:'行业化学品标准的对标程度' },
+  { dim:'E', code:'E6.3', name:'是否对受限物质清单（MRSL）进行供应商传导和进料检验？', type:'binary', desc:'供应链化学品管控机制' },
+  { dim:'E', code:'E6.4', name:'是否安装并正常运行废气处理设施，排放浓度达标？', type:'binary', desc:'废气治理设施的运行状态' },
+  { dim:'E', code:'E6.5', name:'是否对污水处理站污泥进行安全性鉴别并按规处置？', type:'binary', desc:'污泥处置的合规性' },
+  { dim:'E', code:'E6.6', name:'近三年是否未发生因污染物超标排放被行政处罚的事件？', type:'binary', desc:'环保合规的历史表现' },
+  { dim:'E', code:'E6.7', name:'是否开展产品全生命周期化学品风险评估？', type:'binary', desc:'从产品角度评估化学品风险' },
+
+  /* ===== S 社会 ===== */
+  /* S1 劳工权益 */
+  { dim:'S', code:'S1.1', name:'劳动合同签订率是否≥98%？', type:'binary', desc:'正式劳动关系的覆盖比例' },
+  { dim:'S', code:'S1.2', name:'是否完全杜绝使用童工和强迫劳动，并建立定期自查机制？', type:'binary', desc:'核心劳工标准的底线要求' },
+  { dim:'S', code:'S1.3', name:'是否建立完善的薪酬福利制度，按时足额发放工资和社保？', type:'binary', desc:'薪酬保障的合规性' },
+  { dim:'S', code:'S1.4', name:'是否建立工会或员工代表机制，保障集体协商权利？', type:'binary', desc:'员工民主参与的制度保障' },
+  { dim:'S', code:'S1.5', name:'是否建立反歧视、反骚扰制度并设立投诉-调查-处理流程？', type:'binary', desc:'职场平等与尊重的保障机制' },
+  { dim:'S', code:'S1.6', name:'近三年是否未发生重大劳动争议或群体性事件？', type:'binary', desc:'劳资关系稳定的实际表现' },
+  /* S2 员工发展与培训 */
+  { dim:'S', code:'S2.1', name:'是否制定年度培训计划并覆盖全体员工？', type:'binary', desc:'培训体系的规划性' },
+  { dim:'S', code:'S2.2', name:'年度人均培训时长是否≥20小时？', type:'binary', desc:'培训投入的量级判断' },
+  { dim:'S', code:'S2.3', name:'是否建立职业发展双通道（管理序列+技术序列）？', type:'binary', desc:'晋升机制的多元化' },
+  { dim:'S', code:'S2.4', name:'是否开展员工敬业度调查并采取改进措施？', type:'binary', desc:'听取员工声音并行动' },
+  { dim:'S', code:'S2.5', name:'是否设立内部竞聘机制，管理岗内部晋升比例≥30%？', type:'binary', desc:'内部人才成长的通道' },
+  { dim:'S', code:'S2.6', name:'是否为一线员工提供学历提升或技能认证资助？', type:'binary', desc:'对基层员工发展的投资' },
+  /* S3 职业健康安全 */
+  { dim:'S', code:'S3.1', name:'是否通过ISO 45001职业健康安全管理体系认证？', type:'binary', desc:'OHS管理的体系化程度' },
+  { dim:'S', code:'S3.2', name:'是否定期开展职业危害因素检测并公示检测结果？', type:'binary', desc:'作业环境风险的透明度' },
+  { dim:'S', code:'S3.3', name:'是否配备齐全有效的个人防护用品并监督正确使用？', type:'binary', desc:'PPE管理的实际落地' },
+  { dim:'S', code:'S3.4', name:'是否开展消防安全定期检查与全员消防演练？', type:'binary', desc:'消防安全的执行力度' },
+  { dim:'S', code:'S3.5', name:'近三年可记录工伤事故率（TRIR）是否低于行业平均水平？', type:'binary', desc:'安全绩效的实际数据' },
+  { dim:'S', code:'S3.6', name:'是否设立员工心理健康援助通道（EAP或心理咨询）？', type:'binary', desc:'心理健康支持的人文关怀' },
+  /* S4 供应链劳工 */
+  { dim:'S', code:'S4.1', name:'是否制定供应商行为准则并覆盖社会责任（含劳工）要求？', type:'binary', desc:'准则文件的覆盖范围' },
+  { dim:'S', code:'S4.2', name:'是否对新供应商进行社会责任准入审核（SAQ或现场审核）？', type:'binary', desc:'供应商准入的把关机制' },
+  { dim:'S', code:'S4.3', name:'是否对现有主要供应商开展年度社会责任复审？', type:'binary', desc:'持续监督的执行力度' },
+  { dim:'S', code:'S4.4', name:'是否将审核中发现的问题纳入供应商改进计划并跟踪闭环？', type:'binary', desc:'问题闭环管理的规范性' },
+  { dim:'S', code:'S4.5', name:'一级供应商社会责任合规率是否≥85%？', type:'binary', desc:'供应商合规的整体水平' },
+  { dim:'S', code:'S4.6', name:'是否公开主要供应商清单及地区分布？', type:'binary', desc:'供应链透明度的体现' },
+  /* S5 社区关系 */
+  { dim:'S', code:'S5.1', name:'是否制定社区公益和乡村振兴参与计划？', type:'binary', desc:'社区投入的战略性' },
+  { dim:'S', code:'S5.2', name:'年度社区公益投入是否不低于利润的1%或固定预算？', type:'binary', desc:'社区投入的财务承诺' },
+  { dim:'S', code:'S5.3', name:'是否优先录用当地劳动力，本地化用工比例≥60%？', type:'binary', desc:'促进就业的地方贡献' },
+  { dim:'S', code:'S5.4', name:'是否建立社区投诉与沟通机制并公开响应时效？', type:'binary', desc:'社区沟通渠道的畅通性' },
+  { dim:'S', code:'S5.5', name:'近三年是否未发生因企业运营引发的社区冲突或投诉升级事件？', type:'binary', desc:'社区关系的实际稳定性' },
+  /* S6 产品责任 */
+  { dim:'S', code:'S6.1', name:'是否通过OEKO-TEX Standard 100或等效产品安全认证？', type:'binary', desc:'产品质量安全的底线认证' },
+  { dim:'S', code:'S6.2', name:'是否建立从原料到成品的全流程追溯体系？', type:'binary', desc:'产品追溯的完整性' },
+  { dim:'S', code:'S6.3', name:'是否建立产品召回制度和应急预案并定期演练？', type:'binary', desc:'召回机制的实际可操作' },
+  { dim:'S', code:'S6.4', name:'是否在产品标签上标注成分、产地、养护说明等消费者信息？', type:'binary', desc:'消费者知情权的保障' },
+  { dim:'S', code:'S6.5', name:'是否建立消费者投诉处理系统，投诉处理满意度≥90%？', type:'binary', desc:'售后服务的质量水平' },
+  { dim:'S', code:'S6.6', name:'近三年是否未发生因产品质量安全引发的重大召回或集体诉讼？', type:'binary', desc:'质量安全的历史记录' },
+  /* S7 数据与隐私 */
+  { dim:'S', code:'S7.1', name:'是否完成数据资产盘点并建立数据分类分级保护制度？', type:'binary', desc:'数据安全管理的基础建设' },
+  { dim:'S', code:'S7.2', name:'是否设立数据保护官（DPO）或等同岗位负责隐私合规？', type:'binary', desc:'隐私治理的组织保障' },
+  { dim:'S', code:'S7.3', name:'是否对员工和客户个人信息进行加密存储和访问管控？', type:'binary', desc:'个人数据的保护措施' },
+  { dim:'S', code:'S7.4', name:'是否开展员工数据安全意识培训且覆盖率≥100%？', type:'binary', desc:'全员数据安全意识' },
+  { dim:'S', code:'S7.5', name:'近三年是否未发生重大数据泄露事件或被监管约谈？', type:'binary', desc:'数据安全的历史表现' },
+
+  /* ===== G 治理 ===== */
+  /* G1 公司治理 */
+  { dim:'G', code:'G1.1', name:'董事会是否下设ESG专业委员会并明确议事规则？', type:'binary', desc:'ESG治理的顶层设计' },
+  { dim:'G', code:'G1.2', name:'独立董事在董事会中占比是否≥1/3？', type:'binary', desc:'董事会独立性的衡量' },
+  { dim:'G', code:'G1.3', name:'是否建立ESG事项定期向董事会汇报的机制（≥每半年一次）？', type:'binary', desc:'ESG信息的决策层传导' },
+  { dim:'G', code:'G1.4', name:'是否将ESG绩效（包括环境、安全、合规等）纳入高管薪酬考核？', type:'binary', desc:'高管激励与ESG的挂钩' },
+  { dim:'G', code:'G1.5', name:'是否建立内部举报人保护制度（如举报热线/匿名信箱）？', type:'binary', desc:'治理透明度的保障' },
+  { dim:'G', code:'G1.6', name:'近三年是否未发生因公司治理缺陷被监管或交易所处罚的事件？', type:'binary', desc:'治理合规的历史记录' },
+  /* G2 商业道德 */
+  { dim:'G', code:'G2.1', name:'是否制定并公开反腐败政策，覆盖全体员工及业务合作伙伴？', type:'binary', desc:'反腐败制度的覆盖范围' },
+  { dim:'G', code:'G2.2', name:'是否对高风险岗位及关键业务环节开展年度廉洁风险评估？', type:'binary', desc:'腐败风险的动态管理' },
+  { dim:'G', code:'G2.3', name:'是否对全体员工及关键供应商开展商业道德与反腐败培训？', type:'binary', desc:'廉洁意识的普及程度' },
+  { dim:'G', code:'G2.4', name:'是否在商业合同中包含反腐败条款？', type:'binary', desc:'合同层面的道德约束' },
+  { dim:'G', code:'G2.5', name:'近三年是否未发生因商业贿赂或不正当竞争被调查或处罚的事件？', type:'binary', desc:'商业道德的合规记录' },
+  /* G3 合规与风控 */
+  { dim:'G', code:'G3.1', name:'是否建立涵盖法律、安全、环保、财务的全领域合规清单？', type:'binary', desc:'合规覆盖的广度' },
+  { dim:'G', code:'G3.2', name:'是否设立合规管理部门或岗位并独立于业务线运行？', type:'binary', desc:'合规职能的独立性' },
+  { dim:'G', code:'G3.3', name:'是否定期（至少半年一次）开展全领域合规风险评估并更新风险地图？', type:'binary', desc:'风险动态管理的机制' },
+  { dim:'G', code:'G3.4', name:'是否针对重大风险制定专项应对预案并完成压力测试？', type:'binary', desc:'重大风险的应对准备' },
+  { dim:'G', code:'G3.5', name:'近三年是否未发生因违规导致的经营停滞、吊销资质等重大后果？', type:'binary', desc:'风控体系的实际效果' },
+  /* G4 ESG 治理 */
+  { dim:'G', code:'G4.1', name:'是否设立专职ESG管理岗位（如ESG经理/总监）？', type:'binary', desc:'ESG专职团队的配置' },
+  { dim:'G', code:'G4.2', name:'ESG工作是否被分解到各业务部门并纳入部门年度KPI？', type:'binary', desc:'ESG责任向下穿透的深度' },
+  { dim:'G', code:'G4.3', name:'是否建立ESG数据收集平台或数字化工具实现数据自动采集？', type:'binary', desc:'ESG数据管理的技术手段' },
+  { dim:'G', code:'G4.4', name:'是否主动参加外部ESG评级（如MSCI、CDP、Sustainalytics）？', type:'binary', desc:'ESG外部评价的参与度' },
+  { dim:'G', code:'G4.5', name:'是否推动子公司或下属工厂同步实施ESG管理体系？', type:'binary', desc:'ESG管理在集团层面的覆盖' },
+  /* G5 信息披露 */
+  { dim:'G', code:'G5.1', name:'是否每年发布独立的ESG报告/可持续发展报告？', type:'binary', desc:'ESG报告的定期产出' },
+  { dim:'G', code:'G5.2', name:'ESG报告是否参照GRI、TCFD、SASB等国际标准框架编制？', type:'binary', desc:'报告框架的国际对标' },
+  { dim:'G', code:'G5.3', name:'ESG报告是否经过第三方独立审验并出具审验声明？', type:'binary', desc:'数据可靠性的外部验证' },
+  { dim:'G', code:'G5.4', name:'是否在公司官网显著位置公开ESG报告和核心绩效数据？', type:'binary', desc:'信息披露的公开可获得性' },
+  { dim:'G', code:'G5.5', name:'是否主动回应投资者及利益相关方的ESG信息问询？', type:'binary', desc:'信息披露的互动性' },
 ];
 
-/* ===== Page Navigation ===== */
-function goToPage(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const pg = document.getElementById('page-' + name);
-  if (pg) pg.classList.add('active');
-  document.getElementById('navCenter').textContent = {
-    intro:'', form:'企业信息', scoring:'板块评分', results:'评估结果', success:'提交成功'
-  }[name] || '';
-}
+function parentCode(code) { return code.split('.')[0]; }
+var SEC_NAMES = {
+  'E1':'环境管理体系','E2':'温室气体排放','E3':'能源管理','E4':'水资源管理','E5':'循环经济','E6':'污染与化学品管理',
+  'S1':'劳工权益','S2':'员工发展与培训','S3':'职业健康安全','S4':'供应链劳工','S5':'社区关系','S6':'产品责任','S7':'数据与隐私',
+  'G1':'公司治理','G2':'商业道德','G3':'合规与风控','G4':'ESG 治理','G5':'信息披露'
+};
+
+/* ===== Page Navigation (backward compat) ===== */
 
 function toast(msg, type='success') {
   let t = document.getElementById('toast');
@@ -582,35 +686,35 @@ function startAssessment() {
 
 /* ===== Indicator Rendering ===== */
 function renderIndicator() {
-  const ind = INDICATORS[currentIndicator];
-  document.getElementById('scoringBdg').textContent = ind.dim === 'E' ? '环境 (E)' : ind.dim === 'S' ? '社会 (S)' : '治理 (G)';
-  document.getElementById('scoringBdg').style.background = ind.dim==='E' ? 'linear-gradient(135deg, var(--mint), var(--cyan))' : ind.dim==='S' ? 'linear-gradient(135deg, #06B6D4, #4095FB)' : 'linear-gradient(135deg, #8B5CF6, #D966CC)';
-  document.getElementById('scoringProg').textContent = `第 ${currentIndicator+1} / ${INDICATORS.length} 部分`;
+  var ind = INDICATORS[currentIndicator];
+  var pc = parentCode(ind.code);
+  var opDim = pc.charAt(0);
+  document.getElementById('scoringBdg').textContent = opDim === 'E' ? '环境 (E) · ' + SEC_NAMES[pc] : opDim === 'S' ? '社会 (S) · ' + SEC_NAMES[pc] : '治理 (G) · ' + SEC_NAMES[pc];
+  document.getElementById('scoringBdg').style.background = opDim==='E' ? 'linear-gradient(135deg, var(--mint), var(--cyan))' : opDim==='S' ? 'linear-gradient(135deg, #06B6D4, #4095FB)' : 'linear-gradient(135deg, #8B5CF6, #D966CC)';
+  document.getElementById('scoringProg').textContent = '第 ' + (currentIndicator+1) + ' / ' + INDICATORS.length + ' 项';
   document.getElementById('progFill').style.width = ((currentIndicator+1) / INDICATORS.length * 100) + '%';
   document.getElementById('indCode').textContent = ind.code;
   document.getElementById('indName').textContent = ind.name;
   document.getElementById('indDesc').textContent = ind.desc;
 
-  const badge = document.getElementById('indBadge');
-  const bc = ind.dim === 'E' ? 'ind-badge-e' : ind.dim === 'S' ? 'ind-badge-s' : 'ind-badge-g';
+  var badge = document.getElementById('indBadge');
+  var bc = opDim === 'E' ? 'ind-badge-e' : opDim === 'S' ? 'ind-badge-s' : 'ind-badge-g';
   badge.className = 'ind-badge ' + bc;
-  badge.textContent = ind.type === 'binary' ? '定性指标' : '多选指标';
+  badge.textContent = ind.type === 'binary' ? '是/否' : (ind.opts ? ind.opts.length + '选1' : '评分');
 
-  const optC = ind.dim === 'E' ? 'score-opt-e' : ind.dim === 'S' ? 'score-opt-s' : 'score-opt-g';
-  let opts;
-  if (ind.type === 'binary') {
-    opts = [{ label: '是 · 符合', value: 100 }, { label: '否 · 不符合', value: 0 }];
-  } else {
-    opts = (ind.opts || []).map((o,i) => ({ label: o, value: Math.round(100 / (ind.opts.length-1)) * i }));
+  var optC = opDim === 'E' ? 'score-opt-e' : opDim === 'S' ? 'score-opt-s' : 'score-opt-g';
+  var opts = [{ label: '是 · 符合', value: 100 }, { label: '否 · 不符合', value: 0 }];
+  if (ind.opts) {
+    opts = ind.opts.map(function(o,i){ return { label: o, value: Math.round(100/(ind.opts.length-1))*i }; });
   }
-  let html = '';
-  opts.forEach(o => {
-    const sel = scores[ind.code] === o.value ? ' selected' : '';
-    html += `<div class="score-opt ${optC}${sel}" data-value="${o.value}" onclick="selectOption(this,'${ind.code}',${o.value})">${o.label}</div>`;
+  var html = '';
+  opts.forEach(function(o){
+    var sel = scores[ind.code] === o.value ? ' selected' : '';
+    html += '<div class="score-opt '+optC+sel+'" data-value="'+o.value+'" onclick="selectOption(this,\''+ind.code+'\','+o.value+')">'+o.label+'</div>';
   });
   document.getElementById('scoreOpts').innerHTML = html;
   document.getElementById('btnPrev').style.visibility = currentIndicator === 0 ? 'hidden' : 'visible';
-  document.getElementById('btnNext').textContent = currentIndicator === INDICATORS.length - 1 ? '查看结果' : '下一部分 →';
+  document.getElementById('btnNext').textContent = currentIndicator === INDICATORS.length - 1 ? '查看结果' : '下一项 →';
 }
 
 function selectOption(el, code, value) {
@@ -642,8 +746,8 @@ function nextIndicator() {
 
 /* ===== Results ===== */
 function calcDimScore(dim) {
-  const items = INDICATORS.filter(i => i.dim === dim);
-  const total = items.reduce((s,i) => s + (scores[i.code] || 0), 0);
+  var items = INDICATORS.filter(function(i){ return i.code.charAt(0) === dim; });
+  var total = items.reduce(function(s,i){ return s + (scores[i.code]||0); }, 0);
   return Math.round(total / items.length);
 }
 
@@ -693,14 +797,15 @@ function showResults() {
     </div>
   `).join('');
 
-  /* Table */
-  const scoreClass = (dim) => dim==='E' ? 'table-score-e' : dim==='S' ? 'table-score-s' : 'table-score-g';
-  document.getElementById('tableBody').innerHTML = INDICATORS.map(i =>
-    `<div class="table-row"><span>${i.code} ${i.name}</span><span class="table-score ${scoreClass(i.dim)}">${scores[i.code] || 0}</span></div>`
-  ).join('');
+  /* Table — show aggregated 二级指标 */
+  var secOrder = ['E1','E2','E3','E4','E5','E6','S1','S2','S3','S4','S5','S6','S7','G1','G2','G3','G4','G5'];
+  var getScoreClass = function(c){ var d=c.charAt(0); return d==='E'?'table-score-e':d==='S'?'table-score-s':'table-score-g'; };
+  document.getElementById('tableBody').innerHTML = secOrder.map(function(sc){
+    return '<div class="table-row"><span>'+sc+' '+SEC_NAMES[sc]+'</span><span class="table-score '+getScoreClass(sc)+'">'+calcSecScore(sc)+'</span></div>';
+  }).join('');
 
   /* Store for submit */
-  window._resultData = { e, s, g, total, rating };
+  window._resultData = { e:e, s:s, g:g, total:total, rating:rating };
 }
 
 /* ===== Submit to Supabase ===== */
@@ -717,7 +822,11 @@ async function submitResults() {
     s_score: data.s,
     g_score: data.g
   };
-  INDICATORS.forEach(function(i) { row[i.code.toLowerCase() + '_score'] = scores[i.code] || 0; });
+  /* Store per-二级指标 aggregated scores + all raw scores with _ separator */
+  ['E1','E2','E3','E4','E5','E6','S1','S2','S3','S4','S5','S6','S7','G1','G2','G3','G4','G5'].forEach(function(sc){
+    row[sc.toLowerCase()+'_score'] = calcSecScore(sc);
+  });
+  INDICATORS.forEach(function(i) { row[i.code.replace('.','_').toLowerCase()+'_score'] = scores[i.code] || 0; });
   try {
     var resp = await fetch(SUPABASE_URL + '/rest/v1/esg_assessments', {
       method: 'POST',
