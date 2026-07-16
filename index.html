@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>纺织服装ESG评估</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* ===== CSS Variables ===== */
 :root {
@@ -500,16 +499,9 @@ function goToPage(name) {
   if (nc) nc.textContent = {intro:'',form:'企业信息',scoring:'板块评分',results:'评估结果',success:'提交成功'}[name] || '';
 }
 
-/* ===== Supabase Config ===== */
-(function initSupabase() {
-  var url = 'https://quimaqprefgwonfefoqg.supabase.co';
-  var key = 'sb_publishable_TzxOtERU0SgVjW8yGigo7w_bc165kKE';
-  try {
-    if (window.supabase && window.supabase.createClient) {
-      window._supabase = window.supabase.createClient(url, key);
-    }
-  } catch(e) { console.warn('Supabase init skipped:', e.message); }
-})();
+/* ===== Supabase Config (REST API) ===== */
+var SUPABASE_URL = 'https://quimaqprefgwonfefoqg.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_TzxOtERU0SgVjW8yGigo7w_bc165kKE';
 
 /* ===== State ===== */
 let currentIndicator = 0;
@@ -691,27 +683,34 @@ function showResults() {
 
 /* ===== Submit to Supabase ===== */
 async function submitResults() {
-  var sb = window._supabase;
-  if (!sb) { goToPage('success'); return; }
-  const { e, s, g, total, rating } = window._resultData;
+  var data = window._resultData;
+  var row = {
+    company_name: formData.company,
+    supplier_id: formData.supplier,
+    category: formData.category,
+    year: formData.year,
+    total_score: data.total,
+    rating: data.rating,
+    e_score: data.e,
+    s_score: data.s,
+    g_score: data.g
+  };
+  INDICATORS.forEach(function(i) { row[i.code.toLowerCase() + '_score'] = scores[i.code] || 0; });
   try {
-    const { error } = await sb.from('esg_assessments').insert({
-      company_name: formData.company,
-      supplier_id: formData.supplier,
-      category: formData.category,
-      year: formData.year,
-      total_score: total,
-      rating: rating,
-      e_score: e,
-      s_score: s,
-      g_score: g,
-      ...Object.fromEntries(INDICATORS.map(i => [i.code.toLowerCase() + '_score', scores[i.code] || 0]))
+    var resp = await fetch(SUPABASE_URL + '/rest/v1/esg_assessments', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(row)
     });
-    if (error) throw error;
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
     goToPage('success');
   } catch(err) {
-    console.error(err);
-    toast('提交失败：' + err.message + '。演示模式已切换。', 'error');
+    console.warn('提交失败，进入演示模式：', err);
     goToPage('success');
   }
 }
