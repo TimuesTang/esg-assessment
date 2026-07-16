@@ -192,6 +192,26 @@ body { display: flex; align-items: center; justify-content: center; }
 .score-opt-g.selected { background: rgba(139,92,246,0.15); border-color: var(--violet); }
 .scoring-nav { display: flex; justify-content: space-between; align-items: center; }
 
+/* Sub-question rows */
+.sub-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; gap: 16px;
+  border-top: 1px solid rgba(237,241,245,0.5);
+}
+.sub-item:first-child { border-top: none; }
+.sub-q { flex: 1; font-size: 13px; color: var(--text); line-height: 1.5; }
+.sub-q code { font-size: 11px; color: var(--mint); font-weight: 600; margin-right: 6px; }
+.sub-opts { display: flex; gap: 8px; flex-shrink: 0; }
+.sub-opt {
+  padding: 6px 18px; border-radius: 8px; cursor: pointer;
+  font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  border: 1.5px solid rgba(18,184,122,0.35); white-space: nowrap;
+  transition: all 0.15s;
+}
+.sub-opt:hover { background: rgba(18,184,122,0.06); }
+.sub-opt.yes.selected { background: rgba(18,184,122,0.15); border-color: var(--mint); color: var(--mint-dark); font-weight: 600; }
+.sub-opt.no.selected { background: rgba(239,68,68,0.1); border-color: #EF4444; color: #991B1B; font-weight: 600; }
+
 /* ===== Page 4: Results ===== */
 .results-wrap { width: 1280px; display: flex; flex-direction: column; gap: 28px; padding: 32px 0; flex: 1; overflow-y: auto; }
 .results-head { display: flex; flex-direction: column; gap: 6px; }
@@ -330,8 +350,8 @@ body { display: flex; align-items: center; justify-content: center; }
   .hero-score-big { font-size: 48px; }
   .success-card { width: 90%; max-width: 360px; padding: 32px; }
   .dim-row { flex-direction: column; gap: 12px; }
-  .score-opts { flex-wrap: wrap; gap: 8px; }
-  .score-opt { min-width: auto; flex: 1 1 45%; font-size: 12px; padding: 10px 12px; }
+  .sub-item { flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 16px; }
+  .sub-q { font-size: 12px; }
   .supplier-bar { flex-direction: column; gap: 6px; }
   .supplier-pill { font-size: 12px; }
   .btn-gradient { width: 100%; }
@@ -435,18 +455,14 @@ body { display: flex; align-items: center; justify-content: center; }
       </div>
       <div class="indicator-card glass-card" id="indCard">
         <div class="ind-head">
-          <div class="ind-meta">
-            <span class="ind-code" id="indCode">E1</span>
-            <span class="ind-name" id="indName">环境管理体系</span>
-          </div>
-          <span class="ind-badge ind-badge-e" id="indBadge">定性指标</span>
+          <span class="scoring-badge" id="scoringBdg">环境 (E)</span>
+          <span class="scoring-progress-text" id="scoringProg">第 1 / 18 部分</span>
         </div>
-        <div class="ind-desc" id="indDesc">企业已建立覆盖环境维度的温室气体排放核算体系，并定期披露范围一、二排放数据。</div>
-        <div class="score-opts" id="scoreOpts"></div>
+        <div id="subQuestions"></div>
       </div>
       <div class="scoring-nav">
-        <button class="btn-glass" id="btnPrev" onclick="prevIndicator()">← 上一部分</button>
-        <button class="btn-gradient" id="btnNext" onclick="nextIndicator()">下一部分 →</button>
+        <button class="btn-glass" id="btnPrev" onclick="prevSection()">← 上一部分</button>
+        <button class="btn-gradient" id="btnNext" onclick="nextSection()">下一部分 →</button>
       </div>
     </div>
   </div>
@@ -519,9 +535,10 @@ var SUPABASE_URL = 'https://quimaqprefgwonfefoqg.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_TzxOtERU0SgVjW8yGigo7w_bc165kKE';
 
 /* ===== State ===== */
-let currentIndicator = 0;
-let scores = {};
-let formData = {};
+var currentSection = 0;
+var SEC_ORDER = ['E1','E2','E3','E4','E5','E6','S1','S2','S3','S4','S5','S6','S7','G1','G2','G3','G4','G5'];
+var scores = {};
+var formData = {};
 
 const INDICATORS = [
   /* ===== E 环境 ===== */
@@ -670,78 +687,78 @@ function toast(msg, type='success') {
 
 /* ===== Form Validation ===== */
 function startAssessment() {
-  const company = document.getElementById('f-company').value.trim();
-  const supplier = document.getElementById('f-supplier').value.trim();
-  const category = document.getElementById('f-category').value;
-  const year = document.getElementById('f-year').value;
+  var company = document.getElementById('f-company').value.trim();
+  var supplier = document.getElementById('f-supplier').value.trim();
+  var category = document.getElementById('f-category').value;
+  var year = document.getElementById('f-year').value;
   if (!company || !supplier || !category || !year) {
     toast('请填写所有必填字段', 'error'); return;
   }
-  formData = { company, supplier, category, year };
+  formData = { company:company, supplier:supplier, category:category, year:year };
   scores = {};
-  currentIndicator = 0;
+  currentSection = 0;
   goToPage('scoring');
-  renderIndicator();
+  renderSection();
 }
 
-/* ===== Indicator Rendering ===== */
-function renderIndicator() {
-  var ind = INDICATORS[currentIndicator];
-  var pc = parentCode(ind.code);
-  var opDim = pc.charAt(0);
-  document.getElementById('scoringBdg').textContent = opDim === 'E' ? '环境 (E) · ' + SEC_NAMES[pc] : opDim === 'S' ? '社会 (S) · ' + SEC_NAMES[pc] : '治理 (G) · ' + SEC_NAMES[pc];
-  document.getElementById('scoringBdg').style.background = opDim==='E' ? 'linear-gradient(135deg, var(--mint), var(--cyan))' : opDim==='S' ? 'linear-gradient(135deg, #06B6D4, #4095FB)' : 'linear-gradient(135deg, #8B5CF6, #D966CC)';
-  document.getElementById('scoringProg').textContent = '第 ' + (currentIndicator+1) + ' / ' + INDICATORS.length + ' 项';
-  document.getElementById('progFill').style.width = ((currentIndicator+1) / INDICATORS.length * 100) + '%';
-  document.getElementById('indCode').textContent = ind.code;
-  document.getElementById('indName').textContent = ind.name;
-  document.getElementById('indDesc').textContent = ind.desc;
+/* ===== Section Rendering ===== */
+function renderSection() {
+  var sc = SEC_ORDER[currentSection];
+  var sel = INDICATORS.filter(function(i){ return parentCode(i.code) === sc; });
+  var opDim = sc.charAt(0);
+  var bg = document.getElementById('scoringBdg');
+  bg.textContent = (opDim==='E'?'环境 (E)':opDim==='S'?'社会 (S)':'治理 (G)') + ' · ' + SEC_NAMES[sc];
+  bg.style.background = opDim==='E' ? 'linear-gradient(135deg, var(--mint), var(--cyan))' : opDim==='S' ? 'linear-gradient(135deg, #06B6D4, #4095FB)' : 'linear-gradient(135deg, #8B5CF6, #D966CC)';
+  document.getElementById('scoringProg').textContent = '第 ' + (currentSection+1) + ' / ' + SEC_ORDER.length + ' 部分';
+  document.getElementById('progFill').style.width = ((currentSection+1) / SEC_ORDER.length * 100) + '%';
 
-  var badge = document.getElementById('indBadge');
-  var bc = opDim === 'E' ? 'ind-badge-e' : opDim === 'S' ? 'ind-badge-s' : 'ind-badge-g';
-  badge.className = 'ind-badge ' + bc;
-  badge.textContent = ind.type === 'binary' ? '是/否' : (ind.opts ? ind.opts.length + '选1' : '评分');
-
-  var optC = opDim === 'E' ? 'score-opt-e' : opDim === 'S' ? 'score-opt-s' : 'score-opt-g';
-  var opts = [{ label: '是 · 符合', value: 100 }, { label: '否 · 不符合', value: 0 }];
-  if (ind.opts) {
-    opts = ind.opts.map(function(o,i){ return { label: o, value: Math.round(100/(ind.opts.length-1))*i }; });
-  }
+  var optC = opDim==='E' ? 'score-opt-e' : opDim==='S' ? 'score-opt-s' : 'score-opt-g';
   var html = '';
-  opts.forEach(function(o){
-    var sel = scores[ind.code] === o.value ? ' selected' : '';
-    html += '<div class="score-opt '+optC+sel+'" data-value="'+o.value+'" onclick="selectOption(this,\''+ind.code+'\','+o.value+')">'+o.label+'</div>';
+  sel.forEach(function(ind){
+    var val = scores[ind.code];
+    var yesSel = val === 100 ? ' selected' : '';
+    var noSel = val === 0 ? ' selected' : '';
+    html += '<div class="sub-item">'+
+      '<div class="sub-q"><code>'+ind.code+'</code>'+ind.name+'</div>'+
+      '<div class="sub-opts">'+
+        '<div class="sub-opt yes'+yesSel+'" onclick="selectOpt(this,\''+ind.code+'\',100)">是 · 符合</div>'+
+        '<div class="sub-opt no'+noSel+'" onclick="selectOpt(this,\''+ind.code+'\',0)">否 · 不符合</div>'+
+      '</div></div>';
   });
-  document.getElementById('scoreOpts').innerHTML = html;
-  document.getElementById('btnPrev').style.visibility = currentIndicator === 0 ? 'hidden' : 'visible';
-  document.getElementById('btnNext').textContent = currentIndicator === INDICATORS.length - 1 ? '查看结果' : '下一项 →';
+  document.getElementById('subQuestions').innerHTML = html;
+  document.getElementById('btnPrev').style.visibility = currentSection === 0 ? 'hidden' : 'visible';
+  document.getElementById('btnNext').textContent = currentSection === SEC_ORDER.length - 1 ? '查看结果' : '下一部分 →';
 }
 
-function selectOption(el, code, value) {
-  el.parentElement.querySelectorAll('.score-opt').forEach(o => o.classList.remove('selected'));
+function selectOpt(el, code, val) {
+  var row = el.parentElement.parentElement;
+  row.querySelectorAll('.sub-opt').forEach(function(o){ o.classList.remove('selected'); });
   el.classList.add('selected');
-  scores[code] = value;
+  scores[code] = val;
 }
 
-function prevIndicator() {
-  if (currentIndicator > 0) { currentIndicator--; renderIndicator(); }
+function prevSection() {
+  if (currentSection > 0) { currentSection--; renderSection(); }
 }
 
-function nextIndicator() {
-  var ind = INDICATORS[currentIndicator];
-  if (scores[ind.code] === undefined) { toast('请先回答：' + ind.code + ' ' + ind.name, 'error'); return; }
-  /* On last indicator, validate all are answered */
-  if (currentIndicator === INDICATORS.length - 1) {
-    var missing = INDICATORS.filter(function(i) { return scores[i.code] === undefined; });
-    if (missing.length > 0) {
-      var names = missing.map(function(i) { return i.code + ' ' + i.name; }).join('、');
-      toast('还有 ' + missing.length + ' 项未填写：' + names, 'error');
-      return;
-    }
-    showResults();
+function nextSection() {
+  var sc = SEC_ORDER[currentSection];
+  var sel = INDICATORS.filter(function(i){ return parentCode(i.code) === sc; });
+  var missing = sel.filter(function(i){ return scores[i.code] === undefined; });
+  if (missing.length > 0) {
+    toast('本页还有 ' + missing.length + ' 题未答：' + missing.map(function(i){return i.code;}).join('、'), 'error');
     return;
   }
-  currentIndicator++; renderIndicator();
+  /* On last section, validate ALL are answered */
+  if (currentSection === SEC_ORDER.length - 1) {
+    var allMissing = INDICATORS.filter(function(i){ return scores[i.code] === undefined; });
+    if (allMissing.length > 0) {
+      toast('还有 ' + allMissing.length + ' 项未填写：' + allMissing.map(function(i){return i.code;}).join('、'), 'error');
+      return;
+    }
+    showResults(); return;
+  }
+  currentSection++; renderSection();
 }
 
 /* ===== Results ===== */
