@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>纺织服装ESG评估</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ===== CSS Variables ===== */
+:root {
+  --mint: #12B87A;
+  --cyan: #06B6D4;
+  --violet: #8B5CF6;
+  --mint-dark: #0E5C3F;
+  --text: #0E3B2E;
+  --text-secondary: #3D6B5B;
+  --text-muted: #5C7A6E;
+  --text-light: #88A399;
+  --white: #FFFFFF;
+  --glass-bg: rgba(255,255,255,0.45);
+  --glass-border: rgba(255,255,255,0.7);
+  --glass-highlight: rgba(255,255,255,0.5);
+  --grad-bg-start: #D9F5EB;
+  --grad-bg-mid: #D1EEF7;
+  --grad-bg-end: #D9EBF9;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --shadow-glass: 0 12px 32px -4px rgba(5,37,24,0.12);
+  --shadow-card: 0 8px 24px -4px rgba(5,37,24,0.08);
+  --shadow-btn: 0 8px 24px rgba(18,184,122,0.45);
+  --font: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* ===== Reset & Base ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--font); background: #0E2A20; }
+body { display: flex; align-items: center; justify-content: center; }
+
+/* ===== Desktop Container ===== */
+#app {
+  position: relative;
+  width: 1440px;
+  height: 900px;
+  transform-origin: top left;
+  background: linear-gradient(180deg, var(--grad-bg-start) 0%, var(--grad-bg-mid) 50%, var(--grad-bg-end) 100%);
+  overflow: hidden;
+}
+
+/* ===== Decorative Orbs ===== */
+.orb { position: absolute; border-radius: 50%; pointer-events: none; z-index: 0; }
+.orb-green { width: 520px; height: 520px; left: -180px; top: -100px; background: radial-gradient(circle, rgba(18,184,122,0.55) 0%, transparent 70%); }
+.orb-cyan { width: 600px; height: 600px; right: -180px; bottom: -200px; background: radial-gradient(circle, rgba(6,182,212,0.4) 0%, transparent 70%); }
+.orb-violet { width: 400px; height: 400px; left: 380px; bottom: -100px; background: radial-gradient(circle, rgba(139,92,246,0.28) 0%, transparent 70%); }
+
+/* ===== Navigation ===== */
+.navbar {
+  position: absolute; top: 0; left: 0; right: 0; height: 64px; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 40px;
+  background: rgba(255,255,255,0.5); backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.7);
+}
+.nav-logo { font-size: 16px; font-weight: 600; color: var(--text); }
+.nav-center { font-size: 14px; font-weight: 600; color: var(--text); }
+.nav-exit { font-size: 14px; color: var(--text-secondary); cursor: pointer; background: none; border: none; font-family: var(--font); }
+
+/* ===== Page Containers ===== */
+.page { position: absolute; top: 64px; left: 0; right: 0; bottom: 0; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1; }
+.page.active { display: flex; }
+
+/* ===== Glass Card Base ===== */
+.glass-card {
+  background: var(--glass-bg); backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-glass), inset 0 1px 1px var(--glass-highlight);
+}
+.glass-input {
+  background: rgba(255,255,255,0.5); border: 1.5px solid rgba(18,184,122,0.5);
+  border-radius: 10px; padding: 0 16px; height: 44px; font-size: 14px;
+  font-family: var(--font); color: var(--text); outline: none; width: 100%;
+  transition: border-color 0.2s;
+}
+.glass-input:focus { border-color: var(--mint); }
+.glass-select {
+  appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%233D6B5B' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px;
+}
+.btn-gradient {
+  background: linear-gradient(135deg, var(--mint), var(--cyan));
+  color: var(--white); border: none; border-radius: 14px;
+  font-size: 16px; font-weight: 600; font-family: var(--font);
+  padding: 0 40px; height: 47px; cursor: pointer;
+  box-shadow: var(--shadow-btn); transition: transform 0.15s, box-shadow 0.15s;
+}
+.btn-gradient:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(18,184,122,0.55); }
+.btn-glass {
+  background: rgba(255,255,255,0.5); backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.7); border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 600; font-family: var(--font);
+  padding: 0 32px; height: 44px; cursor: pointer; color: var(--text);
+  transition: background 0.2s;
+}
+.btn-glass:hover { background: rgba(255,255,255,0.7); }
+
+/* ===== Page 1: Hero ===== */
+.hero-eyebrow {
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(18,184,122,0.18); border: 1px solid rgba(18,184,122,0.35);
+  border-radius: 100px; padding: 6px 20px; font-size: 13px; font-weight: 500;
+  color: var(--mint-dark); backdrop-filter: blur(16px);
+}
+.hero-title { font-size: 48px; font-weight: 600; color: var(--text); text-align: center; }
+.hero-sub { font-size: 16px; color: var(--text-secondary); text-align: center; line-height: 1.75; max-width: 640px; }
+.cat-grid { display: flex; gap: 20px; margin-top: 4px; }
+.cat-card {
+  width: 360px; padding: 28px;
+  background: var(--glass-bg); backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-glass), inset 0 1px 1px var(--glass-highlight);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.cat-icon {
+  width: 48px; height: 48px; border-radius: 12px; display: flex;
+  align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: white;
+}
+.cat-icon-e { background: linear-gradient(135deg, var(--mint), var(--cyan)); box-shadow: 0 6px 16px rgba(18,184,122,0.5); }
+.cat-icon-s { background: linear-gradient(135deg, #06B6D4, #4095FB); box-shadow: 0 6px 16px rgba(6,182,212,0.5); }
+.cat-icon-g { background: linear-gradient(135deg, #8B5CF6, #D966CC); box-shadow: 0 6px 16px rgba(139,92,246,0.5); }
+.cat-name { font-size: 18px; font-weight: 600; color: var(--text); }
+.cat-weight { font-size: 14px; color: var(--text-secondary); }
+.cat-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+/* ===== Page 2: Form ===== */
+.form-card { width: 760px; padding: 44px; display: flex; flex-direction: column; gap: 20px; }
+.form-title { font-size: 26px; font-weight: 600; color: var(--text); }
+.form-sub { font-size: 14px; color: var(--text-secondary); }
+.form-divider { height: 1px; background: linear-gradient(90deg, rgba(18,184,122,0.35), rgba(6,182,212,0.35)); }
+.form-field { display: flex; flex-direction: column; gap: 8px; }
+.form-label { font-size: 14px; font-weight: 600; color: var(--text); }
+
+/* ===== Page 3: Scoring ===== */
+.scoring-wrap { width: 1280px; display: flex; flex-direction: column; gap: 20px; align-items: stretch; }
+.scoring-header { display: flex; align-items: center; justify-content: space-between; }
+.scoring-badge {
+  display: inline-flex; align-items: center; padding: 6px 16px; border-radius: 100px;
+  font-size: 13px; font-weight: 600; color: white;
+  background: linear-gradient(135deg, var(--mint), var(--cyan));
+  box-shadow: 0 4px 12px rgba(18,184,122,0.4);
+}
+.scoring-progress-text { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+.progress-track {
+  height: 6px; border-radius: 3px; background: rgba(255,255,255,0.5);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--mint), var(--cyan));
+  box-shadow: 0 0 6px rgba(18,184,122,0.4);
+  transition: width 0.4s ease;
+}
+.indicator-card {
+  width: 100%; padding: 24px 28px; display: flex; flex-direction: column; gap: 16px;
+}
+.ind-head { display: flex; align-items: center; justify-content: space-between; }
+.ind-meta { display: flex; flex-direction: column; gap: 4px; }
+.ind-code { font-size: 13px; font-weight: 600; color: var(--mint); }
+.ind-name { font-size: 16px; font-weight: 600; color: var(--text); }
+.ind-badge {
+  padding: 6px 14px; border-radius: 12px; font-size: 12px; font-weight: 600;
+}
+.ind-badge-e { background: rgba(245,158,11,0.15); color: #C27803; border: 1px solid rgba(245,158,11,0.4); }
+.ind-badge-s { background: rgba(6,182,212,0.15); color: #0E8A9B; border: 1px solid rgba(6,182,212,0.4); }
+.ind-badge-g { background: rgba(139,92,246,0.15); color: #6E3FE0; border: 1px solid rgba(139,92,246,0.4); }
+.ind-desc { font-size: 13px; color: var(--text-secondary); }
+.score-opts { display: flex; gap: 12px; flex-wrap: wrap; }
+.score-opt {
+  padding: 12px 20px; border-radius: 10px; cursor: pointer; text-align: center;
+  font-size: 14px; font-weight: 500; color: var(--text-secondary);
+  border: 1.5px solid rgba(18,184,122,0.4); flex: 1; min-width: 80px;
+  transition: all 0.2s;
+}
+.score-opt:hover { background: rgba(18,184,122,0.08); }
+.score-opt.selected { background: rgba(18,184,122,0.15); border-color: var(--mint); color: var(--mint-dark); font-weight: 600; }
+.score-opt-binary { width: 120px; flex: 0 0 auto; }
+.score-opt-e { border-color: rgba(18,184,122,0.4); }
+.score-opt-e.selected { background: rgba(18,184,122,0.15); border-color: var(--mint); }
+.score-opt-s { border-color: rgba(6,182,212,0.4); }
+.score-opt-s.selected { background: rgba(6,182,212,0.15); border-color: var(--cyan); }
+.score-opt-g { border-color: rgba(139,92,246,0.4); }
+.score-opt-g.selected { background: rgba(139,92,246,0.15); border-color: var(--violet); }
+.scoring-nav { display: flex; justify-content: space-between; align-items: center; }
+
+/* ===== Page 4: Results ===== */
+.results-wrap { width: 1280px; display: flex; flex-direction: column; gap: 28px; padding: 32px 0; flex: 1; overflow-y: auto; }
+.results-head { display: flex; flex-direction: column; gap: 6px; }
+.results-h1 { font-size: 28px; font-weight: 700; color: var(--text); }
+.results-h2 { font-size: 14px; color: var(--text-secondary); }
+.supplier-bar { display: flex; gap: 14px; flex-wrap: wrap; }
+.supplier-pill {
+  display: flex; align-items: center; gap: 4px; padding: 7px 12px; border-radius: var(--radius-sm);
+  font-size: 12px; border: 1px solid;
+}
+.supplier-pill .key { font-size: 11px; font-weight: 500; }
+.supplier-pill .val { font-size: 12px; font-weight: 600; }
+.supplier-pill-green { background: rgba(18,184,122,0.12); border-color: rgba(18,184,122,0.4); color: var(--text); }
+.supplier-pill-cyan { background: rgba(6,182,212,0.12); border-color: rgba(6,182,212,0.4); color: var(--text); }
+.supplier-pill-violet { background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.4); color: var(--text); }
+.score-hero {
+  padding: 40px; display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, #0D3326 0%, #0D4D5E 60%, #1E3F3D 100%);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 40px -8px rgba(5,37,24,0.25), inset 0 1px 1px rgba(255,255,255,0.18);
+}
+.hero-left { display: flex; flex-direction: column; gap: 4px; }
+.hero-suppname { font-size: 20px; font-weight: 600; color: white; }
+.hero-suppcat { font-size: 14px; font-weight: 500; color: #A8D5C2; }
+.hero-score-lbl { font-size: 13px; font-weight: 500; color: #A8D5C2; margin-top: 8px; }
+.hero-score-big { font-size: 64px; font-weight: 700; color: white; line-height: 1; }
+.hero-score-den { font-size: 13px; color: #7CB89E; }
+.hero-right { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.rate-badge {
+  width: 96px; height: 96px; border-radius: 48px;
+  background: linear-gradient(135deg, var(--mint), var(--cyan));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 44px; font-weight: 700; color: white;
+  box-shadow: 0 6px 18px rgba(18,184,122,0.5);
+}
+.rate-cap { font-size: 14px; font-weight: 600; color: white; }
+.dim-row { display: flex; gap: 16px; }
+.dim-card {
+  flex: 1; padding: 20px 24px;
+  background: var(--glass-bg); backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border); border-radius: 16px;
+  box-shadow: var(--shadow-card), inset 0 1px 1px var(--glass-highlight);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.dim-top { display: flex; align-items: center; justify-content: space-between; }
+.dim-tag { padding: 6px 14px; border-radius: 14px; font-size: 12px; font-weight: 600; }
+.dim-tag-e { background: rgba(236,253,243,0.8); color: #065F46; }
+.dim-tag-s { background: rgba(239,246,255,0.8); color: #1E40AF; }
+.dim-tag-g { background: rgba(245,243,255,0.8); color: #5B21B6; }
+.dim-score { font-size: 22px; font-weight: 700; color: var(--text); }
+.dim-bar { height: 8px; border-radius: 4px; overflow: hidden; }
+.dim-bar-e { background: rgba(18,184,122,0.18); }
+.dim-bar-s { background: rgba(6,182,212,0.18); }
+.dim-bar-g { background: rgba(139,92,246,0.18); }
+.dim-bar-fill { height: 100%; border-radius: 4px; }
+.dim-bar-fill-e { background: var(--mint); }
+.dim-bar-fill-s { background: #3B82F6; }
+.dim-bar-fill-g { background: var(--violet); }
+.dim-cap { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+.table-card {
+  padding: 0;
+  background: var(--glass-bg); backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-glass);
+  overflow: hidden;
+}
+.table-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px;
+  background: rgba(18,184,122,0.1);
+  font-size: 13px; font-weight: 600; color: var(--text);
+}
+.table-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px;
+  border-top: 1px solid rgba(237,241,245,0.5);
+  font-size: 13px; color: var(--text);
+}
+.table-score { font-weight: 600; }
+.table-score-e { color: #047857; }
+.table-score-s { color: #1D4ED8; }
+.table-score-g { color: #6D28D9; }
+
+/* ===== Page 5: Success ===== */
+.success-card {
+  width: 420px; padding: 44px; display: flex; flex-direction: column;
+  align-items: center; gap: 20px;
+  background: rgba(255,255,255,0.55); backdrop-filter: blur(30px);
+  border: 1px solid rgba(255,255,255,0.8); border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-glass), inset 0 1px 1px var(--glass-highlight);
+}
+.check-circle {
+  width: 72px; height: 72px; border-radius: 36px;
+  background: linear-gradient(135deg, var(--mint), var(--cyan));
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 24px rgba(18,184,122,0.6);
+}
+.check-circle svg { width: 36px; height: 36px; }
+.success-title { font-size: 24px; font-weight: 700; color: var(--text); }
+.success-sub { font-size: 14px; color: var(--text-secondary); text-align: center; line-height: 1.6; }
+
+/* ===== Toast & Modal ===== */
+.toast {
+  position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+  padding: 12px 28px; border-radius: 12px; font-size: 14px; font-weight: 500;
+  z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+.toast-success { background: #065F46; color: white; }
+.toast-error { background: #991B1B; color: white; }
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  #app {
+    width: 100vw !important; height: auto !important; min-height: 100vh !important;
+    transform: none !important; overflow-y: auto;
+  }
+  .navbar { padding: 0 16px; height: 56px; }
+  .cat-grid { flex-direction: column; align-items: center; }
+  .cat-card { width: 100%; max-width: 360px; }
+  .form-card { width: 94%; padding: 24px; }
+  .scoring-wrap { width: 94%; }
+  .results-wrap { width: 94%; padding: 16px 0; }
+  .score-hero { flex-direction: column; gap: 24px; text-align: center; padding: 28px; }
+  .dim-row { flex-direction: column; }
+  .hero-title { font-size: 32px; }
+  .hero-score-big { font-size: 48px; }
+  .page { justify-content: flex-start; padding-top: 20px; }
+  .score-opts { flex-wrap: wrap; }
+  .score-opt { min-width: 60px; font-size: 12px; padding: 10px 14px; }
+}
+
+@media (min-width: 769px) {
+  #app { transform-origin: top left; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Orbs -->
+  <div class="orb orb-green"></div>
+  <div class="orb orb-cyan"></div>
+  <div class="orb orb-violet"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <span class="nav-logo">纺织服装ESG评估</span>
+    <span class="nav-center" id="navCenter"></span>
+    <button class="nav-exit" onclick="location.reload()">退出</button>
+  </nav>
+
+  <!-- ===== Page 1: 介绍页 ===== -->
+  <div class="page active" id="page-intro">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:24px;">
+      <div class="hero-eyebrow">中国纺织服装企业ESG指标体系</div>
+      <h1 class="hero-title">纺织服装企业ESG能力评估</h1>
+      <p class="hero-sub">基于中国纺织服装企业ESG指标体系，覆盖环境(E)、社会(S)、公司治理(G)三大维度，17项二级指标，104项三级指标，全面评估企业ESG绩效。</p>
+      <div class="cat-grid">
+        <div class="cat-card">
+          <div class="cat-icon cat-icon-e">E</div>
+          <div class="cat-name">环境</div>
+          <div class="cat-weight">权重 35%</div>
+          <div class="cat-desc">环境管理 · 污染物排放 · 碳管理 · 资源节约 · 绿色设计</div>
+        </div>
+        <div class="cat-card">
+          <div class="cat-icon cat-icon-s">S</div>
+          <div class="cat-name">社会</div>
+          <div class="cat-weight">权重 35%</div>
+          <div class="cat-desc">人力资本 · 职业健康安全 · 产品责任 · 社区责任 · 创新成效</div>
+        </div>
+        <div class="cat-card">
+          <div class="cat-icon cat-icon-g">G</div>
+          <div class="cat-name">公司治理</div>
+          <div class="cat-weight">权重 30%</div>
+          <div class="cat-desc">治理结构 · 专业委员会 · 股东 · 合规 · 审计 · 信披 · ESG融入 · 供应链尽责</div>
+        </div>
+      </div>
+      <button class="btn-gradient" onclick="goToPage('form')" style="margin-top:8px;">开始评估 →</button>
+    </div>
+  </div>
+
+  <!-- ===== Page 2: 企业信息 ===== -->
+  <div class="page" id="page-form">
+    <div class="form-card glass-card">
+      <div class="form-title">企业基本信息</div>
+      <div class="form-sub">请填写参评供应商基本信息，用于本次评估的登记与追踪。</div>
+      <div class="form-divider"></div>
+      <div class="form-field">
+        <label class="form-label">企业全称 *</label>
+        <input class="glass-input" id="f-company" placeholder="请输入企业全称" />
+      </div>
+      <div class="form-field">
+        <label class="form-label">供应商编号 *</label>
+        <input class="glass-input" id="f-supplier" placeholder="请输入供应商编号" />
+      </div>
+      <div class="form-field">
+        <label class="form-label">合作大类 *</label>
+        <select class="glass-input glass-select" id="f-category">
+          <option value="">请选择</option>
+          <option>成衣</option><option>家居内着</option><option>鞋品</option>
+          <option>配件用品</option><option>面料</option><option>辅料</option><option>鞋材</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">评估年度 *</label>
+        <select class="glass-input glass-select" id="f-year">
+          <option value="">请选择</option>
+          <option>2025</option><option>2024</option><option>2023</option>
+        </select>
+      </div>
+      <button class="btn-gradient" onclick="startAssessment()" style="width:100%;">进入评估 →</button>
+    </div>
+  </div>
+
+  <!-- ===== Page 3: 板块评分 ===== -->
+  <div class="page" id="page-scoring">
+    <div class="scoring-wrap">
+      <div class="scoring-header">
+        <span class="scoring-badge" id="scoringBdg">环境 (E)</span>
+        <span class="scoring-progress-text" id="scoringProg">第 1 / 17 部分</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progFill" style="width:6%;"></div>
+      </div>
+      <div class="indicator-card glass-card" id="indCard">
+        <div class="ind-head">
+          <div class="ind-meta">
+            <span class="ind-code" id="indCode">E1</span>
+            <span class="ind-name" id="indName">环境管理体系</span>
+          </div>
+          <span class="ind-badge ind-badge-e" id="indBadge">定性指标</span>
+        </div>
+        <div class="ind-desc" id="indDesc">企业已建立覆盖环境维度的温室气体排放核算体系，并定期披露范围一、二排放数据。</div>
+        <div class="score-opts" id="scoreOpts"></div>
+      </div>
+      <div class="scoring-nav">
+        <button class="btn-glass" id="btnPrev" onclick="prevIndicator()">← 上一部分</button>
+        <button class="btn-gradient" id="btnNext" onclick="nextIndicator()">下一部分 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Page 4: 评估结果 ===== -->
+  <div class="page" id="page-results" style="justify-content:flex-start;overflow-y:auto;">
+    <div class="results-wrap">
+      <div class="results-head">
+        <h1 class="results-h1">ESG 能力评估结果</h1>
+        <span class="results-h2" id="resYear">2025 年度</span>
+        <div class="supplier-bar" style="margin-top:6px;">
+          <span class="supplier-pill supplier-pill-green"><span class="key">供应商全称</span><span class="val" id="resCompany">-</span></span>
+          <span class="supplier-pill supplier-pill-cyan"><span class="key">编号</span><span class="val" id="resSupplier">-</span></span>
+          <span class="supplier-pill supplier-pill-violet"><span class="key">品类</span><span class="val" id="resCat">-</span></span>
+        </div>
+      </div>
+
+      <div class="score-hero">
+        <div class="hero-left">
+          <span class="hero-suppname" id="resHeroName">-</span>
+          <span class="hero-suppcat" id="resHeroCat">-</span>
+          <span class="hero-score-lbl">综合得分</span>
+          <span class="hero-score-big" id="resTotal">-</span>
+          <span class="hero-score-den" id="resDen">满分 100</span>
+        </div>
+        <div class="hero-right">
+          <div class="rate-badge" id="resRate">-</div>
+          <span class="rate-cap" id="resRateCap">评级 - 级</span>
+        </div>
+      </div>
+
+      <div class="dim-row" id="dimRow"></div>
+
+      <div class="table-card">
+        <div class="table-head">
+          <span>二级指标</span><span>得分</span>
+        </div>
+        <div id="tableBody"></div>
+      </div>
+
+      <button class="btn-gradient" onclick="submitResults()" style="align-self:center;">提交评估结果</button>
+    </div>
+  </div>
+
+  <!-- ===== Page 5: 提交成功 ===== -->
+  <div class="page" id="page-success">
+    <div class="success-card">
+      <div class="check-circle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="5 13 10 18 19 7"/></svg>
+      </div>
+      <div class="success-title">提交成功</div>
+      <div class="success-sub">评估数据已成功提交至数据库。<br/>感谢您的参与！</div>
+      <button class="btn-glass" onclick="location.reload()" style="margin-top:8px;">开始新的评估</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ===== Supabase Config ===== */
+const SUPABASE_URL = 'https://quimaqprefgwonfefoqg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_TzxOtERU0SgVjW8yGigo7w_bc165kKE';
+let supabase = null;
+
+try {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch(e) {
+  console.warn('Supabase not configured. Running in demo mode.');
+}
+
+/* ===== State ===== */
+let currentIndicator = 0;
+let scores = {};
+let formData = {};
+
+const INDICATORS = [
+  /* E 环境 6项 */
+  { dim:'E', code:'E1', name:'环境管理体系', type:'binary', desc:'企业已建立覆盖环境维度的温室气体排放核算体系，并定期披露范围一、二排放数据。' },
+  { dim:'E', code:'E2', name:'温室气体排放', type:'binary', desc:'企业制定并实施了明确的碳减排目标与路径规划，定期跟踪减排进展。' },
+  { dim:'E', code:'E3', name:'能源管理', type:'binary', desc:'企业建立了能源管理体系，并进行能耗监测与优化。' },
+  { dim:'E', code:'E4', name:'水资源管理', type:'binary', desc:'企业建立水足迹核算体系，定期监测用水效率并制定节水目标。' },
+  { dim:'E', code:'E5', name:'循环经济', type:'binary', desc:'企业在生产过程中采用循环经济原则，推动废弃物减量与资源化利用。' },
+  { dim:'E', code:'E6', name:'污染与化学品管理', type:'binary', desc:'企业建立有害化学品管理清单，确保废水、废气排放符合国家标准。' },
+  /* S 社会 7项 */
+  { dim:'S', code:'S1', name:'劳工权益', type:'binary', desc:'企业保障员工合法权益，签订劳动合同比例≥98%，无使用童工与强迫劳动现象。' },
+  { dim:'S', code:'S2', name:'员工发展与培训', type:'multi', desc:'企业建立系统化的员工培训与职业发展体系，年度培训覆盖率及晋升机制完善程度。', opts:['无体系','初步建立','体系完善'] },
+  { dim:'S', code:'S3', name:'职业健康安全', type:'binary', desc:'企业通过ISO 45001认证，配备完善的职业健康安全管理体系。' },
+  { dim:'S', code:'S4', name:'供应链劳工', type:'binary', desc:'企业建立供应商社会责任审核机制，覆盖全部一级供应商。' },
+  { dim:'S', code:'S5', name:'社区关系', type:'binary', desc:'企业每年投入不低于利润1%的资源用于社区公益与乡村振兴项目。' },
+  { dim:'S', code:'S6', name:'产品责任', type:'binary', desc:'企业建立产品追溯与召回制度，通过OEKO-TEX等安全认证。' },
+  { dim:'S', code:'S7', name:'数据与隐私', type:'binary', desc:'企业建立数据分类分级保护制度，过去三年未发生重大数据泄露事件。' },
+  /* G 治理 4项 */
+  { dim:'G', code:'G1', name:'公司治理', type:'binary', desc:'企业董事会下设ESG专业委员会，每年召开≥2次ESG专题会议。' },
+  { dim:'G', code:'G2', name:'商业道德', type:'binary', desc:'企业制定并公开反腐败政策，建立举报人保护机制。' },
+  { dim:'G', code:'G3', name:'合规与风控', type:'binary', desc:'企业建立全面的合规管理体系，定期进行风险评估与内部审计。' },
+  { dim:'G', code:'G4', name:'ESG 治理', type:'binary', desc:'企业设立专职ESG管理岗位，ESG绩效纳入高管绩效考核权重≥10%。' },
+  { dim:'G', code:'G5', name:'信息披露', type:'multi', desc:'企业年度ESG报告披露完整度及第三方审验情况。', opts:['未披露','部分披露','完整披露且经审验'] },
+];
+
+/* ===== Page Navigation ===== */
+function goToPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pg = document.getElementById('page-' + name);
+  if (pg) pg.classList.add('active');
+  document.getElementById('navCenter').textContent = {
+    intro:'', form:'企业信息', scoring:'板块评分', results:'评估结果', success:'提交成功'
+  }[name] || '';
+}
+
+function toast(msg, type='success') {
+  let t = document.getElementById('toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.className = 'toast toast-' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ===== Form Validation ===== */
+function startAssessment() {
+  const company = document.getElementById('f-company').value.trim();
+  const supplier = document.getElementById('f-supplier').value.trim();
+  const category = document.getElementById('f-category').value;
+  const year = document.getElementById('f-year').value;
+  if (!company || !supplier || !category || !year) {
+    toast('请填写所有必填字段', 'error'); return;
+  }
+  formData = { company, supplier, category, year };
+  scores = {};
+  currentIndicator = 0;
+  goToPage('scoring');
+  renderIndicator();
+}
+
+/* ===== Indicator Rendering ===== */
+function renderIndicator() {
+  const ind = INDICATORS[currentIndicator];
+  document.getElementById('scoringBdg').textContent = ind.dim === 'E' ? '环境 (E)' : ind.dim === 'S' ? '社会 (S)' : '治理 (G)';
+  document.getElementById('scoringBdg').style.background = ind.dim==='E' ? 'linear-gradient(135deg, var(--mint), var(--cyan))' : ind.dim==='S' ? 'linear-gradient(135deg, #06B6D4, #4095FB)' : 'linear-gradient(135deg, #8B5CF6, #D966CC)';
+  document.getElementById('scoringProg').textContent = `第 ${currentIndicator+1} / ${INDICATORS.length} 部分`;
+  document.getElementById('progFill').style.width = ((currentIndicator+1) / INDICATORS.length * 100) + '%';
+  document.getElementById('indCode').textContent = ind.code;
+  document.getElementById('indName').textContent = ind.name;
+  document.getElementById('indDesc').textContent = ind.desc;
+
+  const badge = document.getElementById('indBadge');
+  const bc = ind.dim === 'E' ? 'ind-badge-e' : ind.dim === 'S' ? 'ind-badge-s' : 'ind-badge-g';
+  badge.className = 'ind-badge ' + bc;
+  badge.textContent = ind.type === 'binary' ? '定性指标' : '多选指标';
+
+  const optC = ind.dim === 'E' ? 'score-opt-e' : ind.dim === 'S' ? 'score-opt-s' : 'score-opt-g';
+  let opts;
+  if (ind.type === 'binary') {
+    opts = [{ label: '是 · 符合', value: 100 }, { label: '否 · 不符合', value: 0 }];
+  } else {
+    opts = (ind.opts || []).map((o,i) => ({ label: o, value: Math.round(100 / (ind.opts.length-1)) * i }));
+  }
+  let html = '';
+  opts.forEach(o => {
+    const sel = scores[ind.code] === o.value ? ' selected' : '';
+    html += `<div class="score-opt ${optC}${sel}" data-value="${o.value}" onclick="selectOption(this,'${ind.code}',${o.value})">${o.label}</div>`;
+  });
+  document.getElementById('scoreOpts').innerHTML = html;
+  document.getElementById('btnPrev').style.visibility = currentIndicator === 0 ? 'hidden' : 'visible';
+  document.getElementById('btnNext').textContent = currentIndicator === INDICATORS.length - 1 ? '查看结果' : '下一部分 →';
+}
+
+function selectOption(el, code, value) {
+  el.parentElement.querySelectorAll('.score-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  scores[code] = value;
+}
+
+function prevIndicator() {
+  if (currentIndicator > 0) { currentIndicator--; renderIndicator(); }
+}
+
+function nextIndicator() {
+  const ind = INDICATORS[currentIndicator];
+  if (scores[ind.code] === undefined) { toast('请先选择评分', 'error'); return; }
+  if (currentIndicator < INDICATORS.length - 1) {
+    currentIndicator++; renderIndicator();
+  } else {
+    showResults();
+  }
+}
+
+/* ===== Results ===== */
+function calcDimScore(dim) {
+  const items = INDICATORS.filter(i => i.dim === dim);
+  const total = items.reduce((s,i) => s + (scores[i.code] || 0), 0);
+  return Math.round(total / items.length);
+}
+
+function getRating(score) {
+  if (score >= 90) return 'A+'; if (score >= 80) return 'A';
+  if (score >= 70) return 'B'; if (score >= 60) return 'C'; return 'D';
+}
+
+function showResults() {
+  goToPage('results');
+  const e = calcDimScore('E'), s = calcDimScore('S'), g = calcDimScore('G');
+  const total = Math.round(e * 0.35 + s * 0.35 + g * 0.30);
+  const rating = getRating(total);
+
+  document.getElementById('resYear').textContent = formData.year + ' 年度';
+  document.getElementById('resCompany').textContent = formData.company;
+  document.getElementById('resSupplier').textContent = formData.supplier;
+  document.getElementById('resCat').textContent = formData.category;
+  document.getElementById('resHeroName').textContent = formData.company;
+  document.getElementById('resHeroCat').textContent = '品类：' + formData.category;
+  document.getElementById('resTotal').textContent = total;
+  document.getElementById('resDen').textContent = '满分 100 · 行业前 25%';
+  document.getElementById('resRate').textContent = rating;
+  document.getElementById('resRateCap').textContent = '评级 ' + rating + ' 级';
+  if (total >= 80) {
+    document.getElementById('resRate').style.background = 'linear-gradient(135deg, var(--mint), var(--cyan))';
+  } else if (total >= 70) {
+    document.getElementById('resRate').style.background = 'linear-gradient(135deg, #06B6D4, #4095FB)';
+  } else {
+    document.getElementById('resRate').style.background = 'linear-gradient(135deg, #F59E0B, #F97316)';
+  }
+
+  /* Dimension cards */
+  const dims = [
+    { dim:'E', name:'环境 (E)', score:e, tag:'dim-tag-e', bar:'dim-bar-e', fill:'dim-bar-fill-e', caps:'环境管理 / 排放 / 能源 / 水资源 / 循环经济 / 污染管理' },
+    { dim:'S', name:'社会 (S)', score:s, tag:'dim-tag-s', bar:'dim-bar-s', fill:'dim-bar-fill-s', caps:'劳工权益 / 员工发展 / 健康安全 / 供应链 / 社区 / 产品责任 / 隐私' },
+    { dim:'G', name:'治理 (G)', score:g, tag:'dim-tag-g', bar:'dim-bar-g', fill:'dim-bar-fill-g', caps:'公司治理 / 商业道德 / 合规风控 / ESG治理 / 信息披露' },
+  ];
+  document.getElementById('dimRow').innerHTML = dims.map(d => `
+    <div class="dim-card">
+      <div class="dim-top">
+        <span class="dim-tag ${d.tag}">${d.name}</span>
+        <span class="dim-score">${d.score}</span>
+      </div>
+      <div class="dim-bar ${d.bar}"><div class="dim-bar-fill ${d.fill}" style="width:${d.score}%"></div></div>
+      <div class="dim-cap">${d.caps}</div>
+    </div>
+  `).join('');
+
+  /* Table */
+  const scoreClass = (dim) => dim==='E' ? 'table-score-e' : dim==='S' ? 'table-score-s' : 'table-score-g';
+  document.getElementById('tableBody').innerHTML = INDICATORS.map(i =>
+    `<div class="table-row"><span>${i.code} ${i.name}</span><span class="table-score ${scoreClass(i.dim)}">${scores[i.code] || 0}</span></div>`
+  ).join('');
+
+  /* Store for submit */
+  window._resultData = { e, s, g, total, rating };
+}
+
+/* ===== Submit to Supabase ===== */
+async function submitResults() {
+  if (!supabase) { toast('数据库未配置，演示模式', 'error'); goToPage('success'); return; }
+  const { e, s, g, total, rating } = window._resultData;
+  try {
+    const { error } = await supabase.from('esg_assessments').insert({
+      company_name: formData.company,
+      supplier_id: formData.supplier,
+      category: formData.category,
+      year: formData.year,
+      total_score: total,
+      rating: rating,
+      e_score: e,
+      s_score: s,
+      g_score: g,
+      ...Object.fromEntries(INDICATORS.map(i => [i.code.toLowerCase() + '_score', scores[i.code] || 0]))
+    });
+    if (error) throw error;
+    goToPage('success');
+  } catch(err) {
+    console.error(err);
+    toast('提交失败：' + err.message + '。演示模式已切换。', 'error');
+    goToPage('success');
+  }
+}
+
+/* ===== Responsive Scaling ===== */
+function resize() {
+  const app = document.getElementById('app');
+  if (window.innerWidth <= 768) {
+    app.style.transform = 'none';
+    app.style.width = '100%';
+    app.style.height = 'auto';
+    app.style.minHeight = '100vh';
+  } else {
+    const scale = Math.min(window.innerWidth / 1440, window.innerHeight / 900);
+    app.style.width = '1440px';
+    app.style.height = '900px';
+    app.style.minHeight = '';
+    app.style.transform = `scale(${scale})`;
+    app.style.marginLeft = (window.innerWidth - 1440 * scale) / 2 + 'px';
+  }
+}
+window.addEventListener('resize', resize);
+window.addEventListener('load', resize);
+</script>
+
+</body>
+</html>
