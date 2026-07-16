@@ -624,13 +624,20 @@ function prevIndicator() {
 }
 
 function nextIndicator() {
-  const ind = INDICATORS[currentIndicator];
-  if (scores[ind.code] === undefined) { toast('请先选择评分', 'error'); return; }
-  if (currentIndicator < INDICATORS.length - 1) {
-    currentIndicator++; renderIndicator();
-  } else {
+  var ind = INDICATORS[currentIndicator];
+  if (scores[ind.code] === undefined) { toast('请先回答：' + ind.code + ' ' + ind.name, 'error'); return; }
+  /* On last indicator, validate all are answered */
+  if (currentIndicator === INDICATORS.length - 1) {
+    var missing = INDICATORS.filter(function(i) { return scores[i.code] === undefined; });
+    if (missing.length > 0) {
+      var names = missing.map(function(i) { return i.code + ' ' + i.name; }).join('、');
+      toast('还有 ' + missing.length + ' 项未填写：' + names, 'error');
+      return;
+    }
     showResults();
+    return;
   }
+  currentIndicator++; renderIndicator();
 }
 
 /* ===== Results ===== */
