@@ -34,7 +34,7 @@
 
 /* ===== Reset & Base ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--font); background: #0E2A20; }
+html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--font); background: #0E2A20; margin: 0; padding: 0; }
 body { display: flex; align-items: center; justify-content: center; }
 
 /* ===== Desktop Container ===== */
@@ -305,27 +305,42 @@ body { display: flex; align-items: center; justify-content: center; }
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
+  html, body { overflow: auto; display: block; }
   #app {
     width: 100vw !important; height: auto !important; min-height: 100vh !important;
-    transform: none !important; overflow-y: auto;
+    transform: none !important; margin: 0 !important; overflow-y: visible !important;
+    position: static !important;
   }
-  .navbar { padding: 0 16px; height: 56px; }
-  .cat-grid { flex-direction: column; align-items: center; }
-  .cat-card { width: 100%; max-width: 360px; }
-  .form-card { width: 94%; padding: 24px; }
-  .scoring-wrap { width: 94%; }
-  .results-wrap { width: 94%; padding: 16px 0; }
-  .score-hero { flex-direction: column; gap: 24px; text-align: center; padding: 28px; }
-  .dim-row { flex-direction: column; }
-  .hero-title { font-size: 32px; }
+  .navbar { padding: 0 16px; height: 56px; position: relative; top: auto; }
+  .navbar .nav-logo-img { height: 24px; }
+  .navbar .nav-logo { font-size: 14px; }
+  .nav-center { display: none; }
+  .page { display: none !important; padding: 16px; justify-content: flex-start !important; overflow-y: auto; }
+  .page.active { display: flex !important; }
+  .orb { display: none; }
+  .hero-title { font-size: 26px; text-align: center; padding: 0 8px; }
+  .hero-sub { font-size: 14px; padding: 0 16px; }
+  .cat-grid { flex-direction: column; align-items: center; gap: 12px; }
+  .cat-card { width: 100%; max-width: 360px; padding: 20px; }
+  .form-card { width: 100%; padding: 24px; }
+  .scoring-wrap { width: 100%; }
+  .results-wrap { width: 100%; padding: 12px 0; }
+  .score-hero { flex-direction: column; gap: 20px; text-align: center; padding: 24px; }
+  .score-hero .hero-left { align-items: center; }
   .hero-score-big { font-size: 48px; }
-  .page { justify-content: flex-start; padding-top: 20px; }
-  .score-opts { flex-wrap: wrap; }
-  .score-opt { min-width: 60px; font-size: 12px; padding: 10px 14px; }
+  .success-card { width: 90%; max-width: 360px; padding: 32px; }
+  .dim-row { flex-direction: column; gap: 12px; }
+  .score-opts { flex-wrap: wrap; gap: 8px; }
+  .score-opt { min-width: auto; flex: 1 1 45%; font-size: 12px; padding: 10px 12px; }
+  .supplier-bar { flex-direction: column; gap: 6px; }
+  .supplier-pill { font-size: 12px; }
+  .btn-gradient { width: 100%; }
+  .table-head, .table-row { padding: 10px 16px; font-size: 11px; }
+  .indicator-card { padding: 16px; }
 }
 
 @media (min-width: 769px) {
-  #app { transform-origin: top left; }
+  #app { position: absolute; top: 0; left: 0; transform-origin: top left; }
 }
 </style>
 </head>
@@ -717,20 +732,34 @@ async function submitResults() {
 
 /* ===== Responsive Scaling ===== */
 function resize() {
-  const app = document.getElementById('app');
+  var app = document.getElementById('app');
   if (window.innerWidth <= 768) {
     app.style.transform = 'none';
     app.style.width = '100%';
     app.style.height = 'auto';
-    app.style.minHeight = '100vh';
-  } else {
-    const scale = Math.min(window.innerWidth / 1440, window.innerHeight / 900);
-    app.style.width = '1440px';
-    app.style.height = '900px';
-    app.style.minHeight = '';
-    app.style.transform = `scale(${scale})`;
-    app.style.marginLeft = (window.innerWidth - 1440 * scale) / 2 + 'px';
+    app.style.position = 'static';
+    app.style.top = '';
+    app.style.left = '';
+    document.body.style.display = 'block';
+    document.body.style.alignItems = '';
+    document.documentElement.style.overflow = 'auto';
+    return;
   }
+  var sw = 1440, sh = 900;
+  var scale = Math.min(window.innerWidth / sw, window.innerHeight / sh);
+  var offsetX = (window.innerWidth - sw * scale) / 2;
+  var offsetY = (window.innerHeight - sh * scale) / 2;
+  app.style.width = sw + 'px';
+  app.style.height = sh + 'px';
+  app.style.position = 'absolute';
+  app.style.top = offsetY + 'px';
+  app.style.left = offsetX + 'px';
+  app.style.transform = 'scale(' + scale + ')';
+  document.body.style.display = 'flex';
+  document.body.style.alignItems = 'center';
+  document.body.style.justifyContent = 'center';
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
 }
 window.addEventListener('resize', resize);
 window.addEventListener('load', resize);
