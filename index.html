@@ -900,28 +900,54 @@ function downloadReport() {
   try {
     var data = window._resultData || {e:0,s:0,g:0,total:0,rating:'B'};
     var secOrder = ['E1','E2','E3','E4','E5','E6','S1','S2','S3','S4','S5','S6','S7','G1','G2','G3','G4','G5'];
-    var secRows = secOrder.map(function(sc){ return '<tr><td>'+sc+' '+SEC_NAMES[sc]+'</td><td class="s">'+calcSecScore(sc)+'</td></tr>'; }).join('');
-    var subRows = INDICATORS.map(function(i){ return '<tr><td>'+i.code+'</td><td class="n">'+i.name+'</td><td class="s">'+(scores[i.code]===100?'是':scores[i.code]===0?'否':'未填')+'</td></tr>'; }).join('');
+    var secRows = secOrder.map(function(sc){
+      var d = sc.charAt(0);
+      var color = d==='E'?'#047857':d==='S'?'#1D4ED8':'#6D28D9';
+      return '<tr><td class="code">'+sc+'</td><td>'+SEC_NAMES[sc]+'</td><td class="score" style="color:'+color+'">'+calcSecScore(sc)+'</td></tr>';
+    }).join('');
+    var subRows = INDICATORS.map(function(i){
+      var d = i.code.charAt(0);
+      var r = scores[i.code];
+      var tag = r===100?'<span class="tag yes">是</span>':r===0?'<span class="tag no">否</span>':'<span class="tag none">未填</span>';
+      return '<tr><td class="code">'+i.code+'</td><td>'+i.name+'</td><td>'+tag+'</td></tr>';
+    }).join('');
+    var rateColor = data.rating==='A'||data.rating==='A+'? 'linear-gradient(135deg,#12B87A,#06B6D4)' : data.rating==='B'? 'linear-gradient(135deg,#06B6D4,#4095FB)' : 'linear-gradient(135deg,#F59E0B,#F97316)';
     var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ESG评估报告</title>'+
       '<style>*{margin:0;padding:0;box-sizing:border-box}'+
-      'body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;padding:40px;color:#0E3B2E;-webkit-print-color-adjust:exact;print-color-adjust:exact}'+
-      'h1{font-size:24px;margin-bottom:8px}h2{font-size:16px;color:#3D6B5B;margin-bottom:16px}'+
-      '.info{display:flex;gap:24px;margin-bottom:20px;flex-wrap:wrap}.info span{font-size:14px;color:#5C7A6E}'+
-      '.hero{background:linear-gradient(135deg,#0D3326,#0D4D5E);color:white;padding:24px;border-radius:16px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}'+
-      '.hero h3{font-size:14px;opacity:.7}.hero .big{font-size:48px;font-weight:700}.hero .badge{width:72px;height:72px;border-radius:36px;background:linear-gradient(135deg,#12B87A,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700}'+
-      'table{width:100%;border-collapse:collapse;margin-bottom:20px}th,td{padding:8px 16px;text-align:left;font-size:13px;border-bottom:1px solid #E5E7EB}th{background:#F0FDF4;font-weight:600}.s{text-align:right;font-weight:600;width:60px}.n{font-size:12px;color:#5C7A6E}'+
-      '.dim{display:flex;gap:16px;margin-bottom:20px}.dim-c{flex:1;padding:16px;border-radius:12px;background:#F0FDF4}.dim-c h4{font-size:13px;margin-bottom:8px}'+
-      '.dim-c .v{font-size:22px;font-weight:700}.dim-c .bar{height:6px;border-radius:3px;background:#D1FAE5;margin-top:8px}.dim-c .bar div{height:100%;border-radius:3px;background:#12B87A}'+
-      '@media print{body{padding:20px}}</style></head><body>'+
-      '<h1>纺织服装企业ESG能力评估报告</h1><h2>'+formData.year+' 年度</h2>'+
-      '<div class="info"><span>供应商全称：'+formData.company+'</span><span>编号：'+formData.supplier+'</span><span>品类：'+formData.category+'</span></div>'+
-      '<div class="hero"><div><h3>综合得分</h3><div class="big">'+data.total+'</div><div style="font-size:13px;opacity:.7">满分 100</div></div><div class="badge">'+data.rating+'</div></div>'+
-      '<div class="dim"><div class="dim-c"><h4>环境 (E)</h4><div class="v">'+data.e+'</div><div class="bar"><div style="width:'+data.e+'%"></div></div></div>'+
-      '<div class="dim-c" style="background:#EFF6FF"><h4>社会 (S)</h4><div class="v">'+data.s+'</div><div class="bar" style="background:#DBEAFE"><div style="width:'+data.s+'%;background:#3B82F6"></div></div></div>'+
-      '<div class="dim-c" style="background:#F5F3FF"><h4>治理 (G)</h4><div class="v">'+data.g+'</div><div class="bar" style="background:#EDE9FE"><div style="width:'+data.g+'%;background:#8B5CF6"></div></div></div></div>'+
-      '<h3 style="margin-bottom:8px">二级指标明细</h3><table><thead><tr><th>指标</th><th>得分</th></tr></thead><tbody>'+secRows+'</tbody></table>'+
-      '<h3 style="margin-bottom:8px">三级指标明细</h3><table><thead><tr><th>编号</th><th>内容</th><th>结果</th></tr></thead><tbody>'+subRows+'</tbody></table>'+
-      '<p style="font-size:12px;color:#88A399;margin-top:20px">报告生成时间：'+new Date().toLocaleString()+'</p></body></html>';
+      'body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;padding:40px;background:white;color:#0E3B2E;-webkit-print-color-adjust:exact;print-color-adjust:exact}'+
+      'h1{font-size:28px;font-weight:700;margin-bottom:6px}h2{font-size:14px;color:#3D6B5B;margin-bottom:14px}'+
+      '.info{display:flex;gap:24px;margin-bottom:24px;flex-wrap:wrap;font-size:14px}.info span b{color:#0E3B2E;font-weight:600}'+
+      '.info span{color:#5C7A6E}'+
+      '.hero{background:linear-gradient(135deg,#0D3326 0%,#0D4D5E 60%,#1E3F3D 100%);padding:32px 40px;border-radius:20px;color:white;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;box-shadow:0 10px 30px rgba(5,37,24,.25)}'+
+      '.hero h3{font-size:13px;font-weight:500;color:#A8D5C2;margin-bottom:4px}.hero .big{font-size:64px;font-weight:700;line-height:1;color:white;margin-bottom:6px}.hero .small{font-size:12px;color:#7CB89E}'+
+      '.hero .badge{width:96px;height:96px;border-radius:48px;background:'+rateColor+';display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:700;color:white;box-shadow:0 6px 18px rgba(18,184,122,.4)}'+
+      '.dim{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:28px}'+
+      '.dim-c{padding:18px 20px;border-radius:14px}.dim-c h4{font-size:14px;font-weight:600;margin-bottom:8px}.dim-c .v{font-size:28px;font-weight:700}'+
+      '.dim-c .bar{height:6px;border-radius:3px;margin-top:10px}.dim-c .bar div{height:100%;border-radius:3px}'+
+      '.dim-e{background:rgba(16,185,129,.12);color:#047857}.dim-e .bar{background:rgba(16,185,129,.2)}.dim-e .bar div{background:#10B981}'+
+      '.dim-s{background:rgba(59,130,246,.12);color:#1D4ED8}.dim-s .bar{background:rgba(59,130,246,.2)}.dim-s .bar div{background:#3B82F6}'+
+      '.dim-g{background:rgba(139,92,246,.12);color:#6D28D9}.dim-g .bar{background:rgba(139,92,246,.2)}.dim-g .bar div{background:#8B5CF6}'+
+      'h3{font-size:18px;font-weight:700;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #D1FAE5}'+
+      'table{width:100%;border-collapse:collapse;margin-bottom:24px}'+
+      'th,td{padding:8px 12px;text-align:left;font-size:13px;border-bottom:1px solid #E5E7EB}th{background:#F0FDF4;font-weight:600;color:#047857}'+
+      'tr:nth-child(even){background:#F9FAFB}'+
+      'td.code{font-weight:700;color:#0E3B2E;width:60px}td.score{font-weight:700;text-align:right;width:60px}'+
+      '.tag{display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600}'+
+      '.tag.yes{background:rgba(16,185,129,.15);color:#047857}.tag.no{background:rgba(239,68,68,.1);color:#991B1B}.tag.none{background:#F3F4F6;color:#6B7280}'+
+      '.footer{margin-top:24px;padding-top:12px;border-top:1px solid #E5E7EB;font-size:11px;color:#88A399;text-align:right}'+
+      '@media print{body{padding:20px}.hero,.dim-c{break-inside:avoid}}'+
+      '</style></head><body>'+
+      '<h1>纺织服装企业ESG能力评估报告</h1>'+
+      '<h2>'+formData.year+' 年度</h2>'+
+      '<div class="info"><span><b>供应商全称：</b>'+formData.company+'</span><span><b>编号：</b>'+formData.supplier+'</span><span><b>品类：</b>'+formData.category+'</span></div>'+
+      '<div class="hero"><div><h3>综合得分</h3><div class="big">'+data.total+'</div><div class="small">满分 100</div></div><div class="badge">'+data.rating+'</div></div>'+
+      '<div class="dim"><div class="dim-c dim-e"><h4>环境 (E)</h4><div class="v">'+data.e+'</div><div class="bar"><div style="width:'+data.e+'%"></div></div></div>'+
+      '<div class="dim-c dim-s"><h4>社会 (S)</h4><div class="v">'+data.s+'</div><div class="bar"><div style="width:'+data.s+'%"></div></div></div>'+
+      '<div class="dim-c dim-g"><h4>治理 (G)</h4><div class="v">'+data.g+'</div><div class="bar"><div style="width:'+data.g+'%"></div></div></div></div>'+
+      '<h3>二级指标明细</h3><table><thead><tr><th>编号</th><th>指标</th><th style="text-align:right">得分</th></tr></thead><tbody>'+secRows+'</tbody></table>'+
+      '<h3>三级指标明细</h3><table><thead><tr><th>编号</th><th>内容</th><th>结果</th></tr></thead><tbody>'+subRows+'</tbody></table>'+
+      '<div class="footer">报告生成时间：'+new Date().toLocaleString()+' · Semir ESG Assessment Platform</div>'+
+      '</body></html>';
     var w = window.open('', '_blank', 'width=900,height=700');
     w.document.write(html);
     w.document.close();
